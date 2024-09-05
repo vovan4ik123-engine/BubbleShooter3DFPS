@@ -10,7 +10,13 @@ add_compile_options(-fexceptions -frtti)
     add_definitions(-DBR_DEBUG)
 
 add_library(main SHARED main.cpp
-
+                        GameStateHelper.cpp
+                        Sounds.cpp
+                        playState/PlayStateGUILayer.cpp
+                        playState/PlayStateSceneLayer.cpp
+                        player/Player.cpp
+                        player/PlayerAirTrajectory.cpp
+                        enemy/Enemy.cpp
             )
 
 target_include_directories(main PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
