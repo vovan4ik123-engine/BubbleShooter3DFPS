@@ -18,6 +18,8 @@ namespace BubbleShooter3D
         std::shared_ptr<Beryll::SliderHorizontal> slider2;
         std::shared_ptr<Beryll::SliderHorizontal> slider3;
 
+        std::shared_ptr<Beryll::Joystick> playerJoystick;
+
     private:
         std::vector<std::shared_ptr<Beryll::GUIObject>> m_guiObjects;
 

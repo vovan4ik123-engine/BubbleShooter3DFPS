@@ -21,13 +21,15 @@ uniform float specularLightStrength;
 
 void main()
 {
+    vec3 norm = normalize(normal);
+
     // diffuse
-    float diffuse = max(dot(normal, -sunLightDir), 0.0f) * sunLightStrength;
+    float diffuse = max(dot(norm, -sunLightDir), 0.0f) * sunLightStrength;
 
     // specular
     vec3 fragToCameraDir = normalize(cameraPos - fragPos);
-    vec3 reflectDir = reflect(sunLightDir, normal); // reflect(fromLightPosToFragPos, normal);
-    float specular = pow(max(dot(fragToCameraDir, reflectDir), 0.0f), 64.0f) * specularLightStrength; // 64.0f <- bigger number = smaller light dot
+    vec3 reflectDir = normalize(reflect(sunLightDir, norm));
+    float specular = pow(max(dot(fragToCameraDir, reflectDir), 0.0f), 8.0f) * specularLightStrength; // 64.0f <- bigger number = smaller light dot
 
     // shadow
     // get closest depth value from light's perspective (using [0,1] range fragPosLight as coords)

@@ -19,7 +19,7 @@ uniform mat3 normalMatrix;
 void main()
 {
     textureCoords = inTextureCoords;
-    normal = normalize(normalMatrix * inNormal);
+    normal = normalMatrix * inNormal;
 
     vec4 inPosVec4 = vec4(inPosition, 1.0f);
     fragPos = (modelMatrix * inPosVec4).xyz;
