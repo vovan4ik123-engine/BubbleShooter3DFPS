@@ -40,7 +40,7 @@ namespace BubbleShooter3D
         Sounds::update();
 
         handleControls();
-        handlePlayer();
+        //handlePlayer();
     }
 
     void PlayStateSceneLayer::updateAfterPhysics()
@@ -69,7 +69,7 @@ namespace BubbleShooter3D
                     {
                         if(collisionWithID == enemy.getID())
                         {
-                            enemy.disable();
+                            //enemy.disable();
                             Sounds::playSoundEffect(SoundType::BULLET_HIT);
                             break;
                         }
@@ -87,8 +87,8 @@ namespace BubbleShooter3D
         //BR_INFO("%s", "scene draw call");
 
         // 1. Draw into shadow map.
-        glm::vec3 sunPos = m_player->getOrigin() + m_dirToSun * 20.0f;
-        glm::mat4 lightProjection = glm::ortho(-10.0f, 10.0f, -10.0f, 10.0f, 5.0f, 40.0f);
+        glm::vec3 sunPos = m_player->getOrigin() + m_dirToSun * 100.0f;
+        glm::mat4 lightProjection = glm::ortho(-100.0f, 100.0f, -100.0f, 100.0f, 5.0f, 150.0f);
         glm::mat4 lightView = glm::lookAt(sunPos, sunPos + m_sunLightDir, BeryllConstants::worldUp);
 
         m_sunLightVPMatrix = lightProjection * lightView;
@@ -173,8 +173,6 @@ namespace BubbleShooter3D
 
         m_simpleObjForShadowMap.push_back(m_player);
 
-
-
         for(int i = 0; i < 10; ++i)
         {
             const auto bullet = std::make_shared<Beryll::SimpleCollidingObject>("models3D/player/PlayerBullet.fbx",
@@ -216,23 +214,25 @@ namespace BubbleShooter3D
                                                                                           false,
                                                                                           Beryll::CollisionFlags::DYNAMIC,
                                                                                           Beryll::CollisionGroups::MOVABLE_ENEMY,
-                                                                                          Beryll::CollisionGroups::MOVABLE_ENEMY |
-                                                                                                  Beryll::CollisionGroups::PLAYER | Beryll::CollisionGroups::PLAYER_BULLET,
+                                                                                          Beryll::CollisionGroups::PLAYER | Beryll::CollisionGroups::PLAYER_BULLET,
                                                                                           Beryll::SceneObjectGroups::ENEMY);
 
             for(auto& obj : enemies)
             {
-                m_enemies.emplace_back(obj);
+                obj->setGravity(EnumsAndVars::enemyGravity);
 
-                float xDir = Beryll::RandomGenerator::getFloat() * 2.0f - 1.0f;
-                float yDir = Beryll::RandomGenerator::getFloat() * 2.0f - 1.0f;
-                float zDir = Beryll::RandomGenerator::getFloat() * 2.0f - 1.0f;
-                m_enemies.back().getObj()->setGravity(glm::vec3{0.0f});
-                m_enemies.back().getObj()->setOrigin(m_player->getOrigin() + glm::normalize(glm::vec3(xDir, yDir, zDir)) * (Beryll::RandomGenerator::getFloat() * 50.0f));
-                m_enemies.back().getObj()->applyCentralImpulse(glm::normalize(glm::vec3(xDir, yDir, zDir)) * m_gui->slider1->getValue());
+                m_enemies.emplace_back(obj);
                 m_allDynamicObjects.push_back(obj);
+                m_simpleObjForShadowMap.push_back(obj);
+                m_enemies.back().disable();
             }
         }
+
+        spawnEnemy();
+        spawnEnemy();
+        spawnEnemy();
+        spawnEnemy();
+        spawnEnemy();
     }
 
     void PlayStateSceneLayer::loadShadersAndLight()
@@ -248,9 +248,9 @@ namespace BubbleShooter3D
         m_simpleObjSunLightShadows->activateDiffuseTextureMat1();
         m_simpleObjSunLightShadows->activateShadowMapTexture();
 
-        m_shadowMap = Beryll::Renderer::createShadowMap(1024, 1024);
+        m_shadowMap = Beryll::Renderer::createShadowMap(2000, 2000);
 
-        m_dirToSun = glm::normalize(glm::vec3(-0.5f, 2.0f, -1.0f));
+        m_dirToSun = glm::normalize(glm::vec3(0.05f, 2.0f, 0.0f));
         m_sunLightDir = -m_dirToSun;
     }
 
@@ -365,17 +365,17 @@ namespace BubbleShooter3D
     {
         if(EnumsAndVars::shotTimeSec + EnumsAndVars::shotDelaySec < EnumsAndVars::playTimeSec)
         {
-            if(EnumsAndVars::bulletCurrentIndex >= m_playerBullets.size())
-                EnumsAndVars::bulletCurrentIndex = 0;
+            if(m_currentBulletIndex >= m_playerBullets.size())
+                m_currentBulletIndex = 0;
 
-            m_playerBullets[EnumsAndVars::bulletCurrentIndex]->enableCollisionMesh();
-            m_playerBullets[EnumsAndVars::bulletCurrentIndex]->enableUpdate();
-            m_playerBullets[EnumsAndVars::bulletCurrentIndex]->enableDraw();
+            m_playerBullets[m_currentBulletIndex]->enableCollisionMesh();
+            m_playerBullets[m_currentBulletIndex]->enableUpdate();
+            m_playerBullets[m_currentBulletIndex]->enableDraw();
 
-            m_playerBullets[EnumsAndVars::bulletCurrentIndex]->setOrigin(m_bulletStartPosition, true);
-            m_playerBullets[EnumsAndVars::bulletCurrentIndex]->applyCentralImpulse(m_bulletImpulseVector);
+            m_playerBullets[m_currentBulletIndex]->setOrigin(m_bulletStartPosition, true);
+            m_playerBullets[m_currentBulletIndex]->applyCentralImpulse(m_bulletImpulseVector);
 
-            ++EnumsAndVars::bulletCurrentIndex;
+            ++m_currentBulletIndex;
             EnumsAndVars::shotTimeSec = EnumsAndVars::playTimeSec;
         }
     }
@@ -387,71 +387,59 @@ namespace BubbleShooter3D
             if(!enemy.getIsEnabled())
                 continue;
 
-            glm::vec3 moveDir = glm::normalize(enemy.getObj()->getLinearVelocity());
+            glm::vec3 linearVeloc = enemy.getObj()->getLinearVelocity();
+            glm::vec3 moveDir = glm::normalize(linearVeloc);
             glm::vec3 newMoveDir{0.0f};
+            const float actualSpeed = glm::length(linearVeloc);
             glm::vec3 origin = enemy.getObj()->getOrigin();
-            bool resetOrigin = false;
+            bool changeMoveDir = false;
 
             if(origin.x < m_enemyMinX)
             {
-                resetOrigin = true;
+                changeMoveDir = true;
                 origin.x = m_enemyMinX;
                 newMoveDir = glm::reflect(moveDir, glm::vec3{1.0f, 0.0f, 0.0f});
             }
             else if(origin.x > m_enemyMaxX)
             {
-                resetOrigin = true;
+                changeMoveDir = true;
                 origin.x = m_enemyMaxX;
                 newMoveDir = glm::reflect(moveDir, glm::vec3{-1.0f, 0.0f, 0.0f});
             }
-
-            if(origin.y < m_enemyMinY)
+            else if(origin.z < m_enemyMinZ)
             {
-                resetOrigin = true;
-                origin.y = m_enemyMinY;
-                newMoveDir = glm::reflect(moveDir, glm::vec3{0.0f, 1.0f, 0.0f});
-            }
-            else if(origin.y > m_enemyMaxY)
-            {
-                resetOrigin = true;
-                origin.y = m_enemyMaxY;
-                newMoveDir = glm::reflect(moveDir, glm::vec3{0.0f, -1.0f, 0.0f});
-            }
-
-            if(origin.z < m_enemyMinZ)
-            {
-                resetOrigin = true;
+                changeMoveDir = true;
                 origin.z = m_enemyMinZ;
                 newMoveDir = glm::reflect(moveDir, glm::vec3{0.0f, 0.0f, 1.0f});
             }
             else if(origin.z > m_enemyMaxZ)
             {
-                resetOrigin = true;
+                changeMoveDir = true;
                 origin.z = m_enemyMaxZ;
                 newMoveDir = glm::reflect(moveDir, glm::vec3{0.0f, 0.0f, -1.0f});
             }
-
-            if(resetOrigin)
+            else if(origin.y < enemy.getObj()->getFromOriginToBottom())
             {
-                enemy.getObj()->setOrigin(origin, true);
+                origin.y = enemy.getObj()->getFromOriginToBottom();
+                enemy.getObj()->setOrigin(origin, false);
+                linearVeloc.y = 0;
+                enemy.getObj()->setLinearVelocity(linearVeloc);
+                glm::vec3 impulse = BeryllConstants::worldUp * (200.0f + 200.0f * Beryll::RandomGenerator::getFloat());
+                enemy.getObj()->applyCentralImpulse(impulse);
+            }
+
+            if(changeMoveDir)
+            {
+                enemy.getObj()->setOrigin(origin, false);
                 moveDir = glm::normalize(newMoveDir);
-            }
 
-            if(glm::any(glm::isnan(moveDir)))
-            {
-                float xDir = Beryll::RandomGenerator::getFloat() * 2.0f - 1.0f;
-                float yDir = Beryll::RandomGenerator::getFloat() * 2.0f - 1.0f;
-                float zDir = Beryll::RandomGenerator::getFloat() * 2.0f - 1.0f;
-                moveDir = glm::normalize(glm::vec3(xDir, yDir, zDir));
-            }
+                if(glm::any(glm::isnan(moveDir)))
+                {
+                    BR_ASSERT(false, "%s", "if(glm::any(glm::isnan(moveDir)))");
+                }
 
-            float desiredSpeed = m_gui->slider1->getValue();
-            float actualSpeed = glm::length(enemy.getObj()->getLinearVelocity());
-            if(actualSpeed < desiredSpeed - 0.1f || actualSpeed > desiredSpeed + 0.1f)
-            {
-                enemy.getObj()->setLinearVelocity(moveDir * desiredSpeed);
+                enemy.getObj()->setLinearVelocity(moveDir * actualSpeed);
             }
-
         }
     }
 
@@ -486,5 +474,22 @@ namespace BubbleShooter3D
         {
             m_player->setOrigin(origin, false);
         }
+    }
+
+    void PlayStateSceneLayer::spawnEnemy()
+    {
+        if(m_currentEnemyIndex >= m_enemies.size())
+            m_currentEnemyIndex = 0;
+
+        glm::vec3 newOrigin = m_player->getOrigin();
+        newOrigin.y + 30.0f + Beryll::RandomGenerator::getFloat() * 30.0f;
+
+        float xDir = Beryll::RandomGenerator::getFloat() * 2.0f - 1.0f;
+        float zDir = Beryll::RandomGenerator::getFloat() * 2.0f - 1.0f;
+        m_enemies[m_currentEnemyIndex].enable();
+        m_enemies[m_currentEnemyIndex].getObj()->setOrigin(newOrigin);
+        m_enemies[m_currentEnemyIndex].getObj()->applyCentralImpulse(glm::normalize(glm::vec3(xDir, 0.0f, zDir)) * 200.0f);
+
+        ++m_currentEnemyIndex;
     }
 }

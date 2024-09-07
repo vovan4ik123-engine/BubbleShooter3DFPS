@@ -18,21 +18,20 @@ namespace EnumsAndVars
     constexpr inline float playerMass = 0.0f;
 
     // Player bullet
-    constexpr inline float bulletMass = 0.1f;
+    constexpr inline float bulletMass = 0.001f;
     constexpr inline glm::vec3 bulletGravity{0.0f, -10.0f, 0.0f};
-    inline int bulletCurrentIndex = 0;
     inline float shotTimeSec = -9999.0;
-    inline float shotDelaySec = 0.2;
+    inline float shotDelaySec = 0.01;
 
     // Enemy
     constexpr inline float enemyMass = 10.0f;
+    constexpr inline glm::vec3 enemyGravity{0.0f, -40.0f, 0.0f};
 
     // Play time.
     inline float playTimeSec = 0.0f;
 
     inline void reset()
     {
-        bulletCurrentIndex = 0;
         shotTimeSec = -9999.0;
         shotDelaySec = 0.2;
 

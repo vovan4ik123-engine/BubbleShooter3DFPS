@@ -30,7 +30,7 @@ namespace BubbleShooter3D
         slider3->setValue(100.0f);
 
         playerJoystick = std::make_shared<Beryll::Joystick>("GUI/JoystickDefault.png","",
-                                                            0.0f, 0.25f, 0.30f, 0.30f * screenAR);
+                                                            0.0f, 0.25f, 0.40f, 0.40f * screenAR);
         m_guiObjects.push_back(playerJoystick);
         playerJoystick->disable();
     }

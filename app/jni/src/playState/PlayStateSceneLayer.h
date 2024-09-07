@@ -28,6 +28,7 @@ namespace BubbleShooter3D
         void shootBullet();
         void handleEnemies();
         void handlePlayer();
+        void spawnEnemy();
 
         std::shared_ptr<PlayStateGUILayer> m_gui;
 
@@ -69,12 +70,13 @@ namespace BubbleShooter3D
         float m_enemyMaxX = 50.0f;
         float m_enemyMinZ = -50.0f;
         float m_enemyMaxZ = 50.0f;
-        float m_enemyMinY = 2.0f;
-        float m_enemyMaxY = 25.0f;
 
         float m_playerMinX = -25.0f;
         float m_playerMaxX = 25.0f;
         float m_playerMinZ = -25.0f;
         float m_playerMaxZ = 25.0f;
+
+        int m_currentBulletIndex = 0;
+        int m_currentEnemyIndex = 0;
     };
 }
