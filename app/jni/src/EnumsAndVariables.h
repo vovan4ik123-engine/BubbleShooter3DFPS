@@ -10,8 +10,8 @@ namespace EnumsAndVars
 
     struct Settings
     {
-        static inline float cameraHorizontalSpeed = 1.0f;
-        static inline float cameraVerticalSpeed = 1.0f;
+        static inline float cameraHorizontalSpeed = 0.25f;
+        static inline float cameraVerticalSpeed = 0.2f;
     };
 
     // Player

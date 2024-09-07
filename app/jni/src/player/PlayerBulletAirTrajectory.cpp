@@ -77,7 +77,7 @@ namespace BubbleShooter3D
             {
                 Beryll::RayClosestHit hit = Beryll::Physics::castRayClosestHit(previousPoint, currentPoint,
                                                                                Beryll::CollisionGroups::PLAYER_BULLET,
-                                                                               Beryll::CollisionGroups::GROUND);
+                                                                               Beryll::CollisionGroups::GROUND | Beryll::CollisionGroups::MOVABLE_ENEMY);
 
                 if(hit)
                 {

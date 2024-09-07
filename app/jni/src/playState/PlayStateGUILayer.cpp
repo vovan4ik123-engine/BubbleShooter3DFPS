@@ -17,9 +17,9 @@ namespace BubbleShooter3D
             m_guiObjects.push_back(m_statistics2);
         }
 
-        slider1 = std::make_shared<Beryll::SliderHorizontal>("hor", EnumsAndVars::FontsPath::roboto, 0.04f, 0.005f, 0.11f, 0.2f, 0.04f, 0.1f, 0.5f);
+        slider1 = std::make_shared<Beryll::SliderHorizontal>("enemy speed", EnumsAndVars::FontsPath::roboto, 0.04f, 0.005f, 0.11f, 0.2f, 0.04f, 10.0f, 100.0f);
         m_guiObjects.push_back(slider1);
-        slider1->setValue(0.25f);
+        slider1->setValue(10.0f);
 
         slider2 = std::make_shared<Beryll::SliderHorizontal>("vert", EnumsAndVars::FontsPath::roboto, 0.04f, 0.005f, 0.16f, 0.2f, 0.04f, 0.1f, 0.5f);
         m_guiObjects.push_back(slider2);
