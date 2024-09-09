@@ -3,30 +3,33 @@
 precision highp float; // highp mediump lowp
 
 in vec2 textureCoords;
-in vec3 normal;
-in vec3 fragPos;
+in vec3 fragPosTangentSpace;
+in vec3 sunLightDirTangentSpace;
+in vec3 cameraPosTangentSpace;
 in vec4 fragPosLightPerspective;
 
 out vec4 outColor;
 
 uniform sampler2D diffuseTexture;
 uniform sampler2D shadowMapTexture;
-
-uniform vec3 sunLightDir;
-uniform vec3 cameraPos;
+uniform sampler2D normalMapTexture;
 
 uniform float ambientLight;
 uniform float specularLightStrength;
 
 void main()
 {
+    // normal mapping
+    vec3 normal = texture(normalMapTexture, textureCoords).rgb * 2.0f - 1.0f;   // this normal is in tangent space
+    normal = normalize(normal);
+
     // diffuse
-    vec3 norm = normalize(normal);
-    float diffuse = max(dot(norm, -sunLightDir), 0.0f);
+    vec3 sunTangentNorm = normalize(sunLightDirTangentSpace);
+    float diffuse = max(dot(normal, -sunTangentNorm), 0.0f);
 
     // specular
-    vec3 fragToCameraDir = normalize(cameraPos - fragPos);
-    vec3 reflectDir = normalize(reflect(sunLightDir, norm));
+    vec3 fragToCameraDir = normalize(cameraPosTangentSpace - fragPosTangentSpace);
+    vec3 reflectDir = normalize(reflect(sunTangentNorm, normal));
     float specular = pow(max(dot(fragToCameraDir, reflectDir), 0.0f), 64.0f) * specularLightStrength; // 64.0f <- bigger number = smaller light dot
 
     // shadow

@@ -46,7 +46,7 @@ namespace BubbleShooter3D
         bool castRayBetweenPoints = false;
 
         // Calculate some points on fly trajectory.
-        for(int i = 2; i <= 20; ++i)
+        for(int i = 2; i <= 25; ++i)
         {
             throwDirXZPlane = normalizedImpulseVector * float(i * i) * 1.7f; // Point every float(i * i)... meters on trajectory !!! Not on ground !!!
             if(i == 3)
@@ -77,7 +77,7 @@ namespace BubbleShooter3D
             {
                 Beryll::RayClosestHit hit = Beryll::Physics::castRayClosestHit(previousPoint, currentPoint,
                                                                                Beryll::CollisionGroups::PLAYER_BULLET,
-                                                                               Beryll::CollisionGroups::GROUND | Beryll::CollisionGroups::MOVABLE_ENEMY);
+                                                                               Beryll::CollisionGroups::STATIC_ENVIRONMENT);
 
                 if(hit)
                 {

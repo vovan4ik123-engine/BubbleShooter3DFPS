@@ -17,17 +17,17 @@ namespace BubbleShooter3D
             m_guiObjects.push_back(m_statistics2);
         }
 
-        slider1 = std::make_shared<Beryll::SliderHorizontal>("enemy speed", EnumsAndVars::FontsPath::roboto, 0.04f, 0.005f, 0.11f, 0.2f, 0.04f, 10.0f, 100.0f);
+        slider1 = std::make_shared<Beryll::SliderHorizontal>("1", EnumsAndVars::FontsPath::roboto, 0.04f, 0.005f, 0.11f, 0.2f, 0.04f, 10.0f, 50.0f);
         m_guiObjects.push_back(slider1);
         slider1->setValue(10.0f);
 
-        slider2 = std::make_shared<Beryll::SliderHorizontal>("vert", EnumsAndVars::FontsPath::roboto, 0.04f, 0.005f, 0.16f, 0.2f, 0.04f, 0.1f, 0.5f);
+        slider2 = std::make_shared<Beryll::SliderHorizontal>("1", EnumsAndVars::FontsPath::roboto, 0.04f, 0.005f, 0.16f, 0.2f, 0.04f, 0.1f, 0.5f);
         m_guiObjects.push_back(slider2);
         slider2->setValue(0.2f);
 
-        slider3 = std::make_shared<Beryll::SliderHorizontal>("bullet power", EnumsAndVars::FontsPath::roboto, 0.04f, 0.005f, 0.21f, 0.2f, 0.04f, 50.0f, 500.0f);
+        slider3 = std::make_shared<Beryll::SliderHorizontal>("bullet power", EnumsAndVars::FontsPath::roboto, 0.04f, 0.005f, 0.21f, 0.2f, 0.04f, 50.0f, 1500.0f);
         m_guiObjects.push_back(slider3);
-        slider3->setValue(100.0f);
+        slider3->setValue(1000.0f);
 
         playerJoystick = std::make_shared<Beryll::Joystick>("GUI/JoystickDefault.png","",
                                                             0.0f, 0.25f, 0.40f, 0.40f * screenAR);

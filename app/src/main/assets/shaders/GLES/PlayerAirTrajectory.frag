@@ -18,9 +18,8 @@ uniform float specularLightStrength;
 
 void main()
 {
-    vec3 norm = normalize(normal);
-
     // diffuse
+    vec3 norm = normalize(normal);
     float diffuse = max(dot(norm, -sunLightDir), 0.0f);
 
     // specular

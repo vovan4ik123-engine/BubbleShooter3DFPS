@@ -9,8 +9,8 @@ namespace BubbleShooter3D
         m_ID = Beryll::LayerID::PLAY_SCENE;
 
         m_playerBullets.reserve(200);
-        m_enemies.reserve(500);
-        m_allDynamicObjects.reserve(700);
+        m_enemies.reserve(700);
+        m_allDynamicObjects.reserve(200);
         m_staticEnv.reserve(10);
         m_simpleObjForShadowMap.reserve(10);
 
@@ -18,6 +18,8 @@ namespace BubbleShooter3D
         loadEnv();
         loadEnemies();
         loadShadersAndLight();
+
+        m_skyBox = Beryll::Renderer::createSkyBox("skyboxes/nightClouds");
 
         Sounds::loadSounds();
         Sounds::reset();
@@ -40,7 +42,7 @@ namespace BubbleShooter3D
         Sounds::update();
 
         handleControls();
-        //handlePlayer();
+        handlePlayer();
     }
 
     void PlayStateSceneLayer::updateAfterPhysics()
@@ -50,7 +52,7 @@ namespace BubbleShooter3D
             if(so->getIsEnabledUpdate())
                 so->updateAfterPhysics();
 
-            if(so->getOrigin().y < -5.0f)
+            if(so->getOrigin().y < -50.0f)
             {
                 so->disableUpdate();
                 so->disableCollisionMesh();
@@ -58,27 +60,6 @@ namespace BubbleShooter3D
             }
         }
 
-        for(const std::shared_ptr<Beryll::SceneObject>& bullet : m_playerBullets)
-        {
-            if(bullet->getIsEnabledUpdate())
-            {
-                int collisionWithID = Beryll::Physics::getAnyCollisionForID(bullet->getID());
-                if(collisionWithID > 0)
-                {
-                    for(Enemy& enemy : m_enemies)
-                    {
-                        if(collisionWithID == enemy.getID())
-                        {
-                            //enemy.disable();
-                            Sounds::playSoundEffect(SoundType::BULLET_HIT);
-                            break;
-                        }
-                    }
-                }
-            }
-        }
-
-        handleEnemies();
         handleCamera();
     }
 
@@ -87,8 +68,10 @@ namespace BubbleShooter3D
         //BR_INFO("%s", "scene draw call");
 
         // 1. Draw into shadow map.
-        glm::vec3 sunPos = m_player->getOrigin() + m_dirToSun * 100.0f;
-        glm::mat4 lightProjection = glm::ortho(-100.0f, 100.0f, -100.0f, 100.0f, 5.0f, 150.0f);
+        glm::vec3 sunPos = m_player->getOrigin() +
+                           (Beryll::Camera::getCameraFrontDirectionXZ() * 200.0f) +
+                           (m_dirToSun * 200.0f);
+        glm::mat4 lightProjection = glm::ortho(-300.0f, 300.0f, -300.0f, 300.0f, 5.0f, 400.0f);
         glm::mat4 lightView = glm::lookAt(sunPos, sunPos + m_sunLightDir, BeryllConstants::worldUp);
 
         m_sunLightVPMatrix = lightProjection * lightView;
@@ -100,46 +83,29 @@ namespace BubbleShooter3D
         // 2. Draw scene.
         glm::mat4 modelMatrix{1.0f};
 
-        m_simpleObjSunLight->bind();
-        m_simpleObjSunLight->set3Float("sunLightDir", m_sunLightDir);
-        m_simpleObjSunLight->set3Float("cameraPos", Beryll::Camera::getCameraPos());
-        m_simpleObjSunLight->set1Float("ambientLight", 0.7f);
-        m_simpleObjSunLight->set1Float("sunLightStrength", 0.25f);
-        m_simpleObjSunLight->set1Float("specularLightStrength", 0.75f);
+        m_simpleObjSunLightShadows->bind();
+        m_simpleObjSunLightShadows->set3Float("sunLightDir", m_sunLightDir);
+        m_simpleObjSunLightShadows->set3Float("cameraPos", Beryll::Camera::getCameraPos());
+        m_simpleObjSunLightShadows->set1Float("ambientLight", 0.7f);
+        m_simpleObjSunLightShadows->set1Float("specularLightStrength", 0.5f);
 
         modelMatrix = m_player->getModelMatrix();
-        m_simpleObjSunLight->setMatrix4x4Float("modelMatrix", modelMatrix);
-        m_simpleObjSunLight->setMatrix3x3Float("normalMatrix", glm::mat3(modelMatrix));
-        Beryll::Renderer::drawObject(m_player, modelMatrix, m_simpleObjSunLight);
+        m_simpleObjSunLightShadows->setMatrix4x4Float("MVPLightMatrix", m_sunLightVPMatrix * modelMatrix);
+        m_simpleObjSunLightShadows->setMatrix4x4Float("modelMatrix", modelMatrix);
+        m_simpleObjSunLightShadows->setMatrix3x3Float("normalMatrix", glm::mat3(modelMatrix));
+        Beryll::Renderer::drawObject(m_player, modelMatrix, m_simpleObjSunLightShadows);
 
         for(const auto& bullet : m_playerBullets)
         {
             if(bullet->getIsEnabledDraw())
             {
                 modelMatrix = bullet->getModelMatrix();
-                m_simpleObjSunLight->setMatrix4x4Float("modelMatrix", modelMatrix);
-                m_simpleObjSunLight->setMatrix3x3Float("normalMatrix", glm::mat3(modelMatrix));
-                Beryll::Renderer::drawObject(bullet, modelMatrix, m_simpleObjSunLight);
+                m_simpleObjSunLightShadows->setMatrix4x4Float("MVPLightMatrix", m_sunLightVPMatrix * modelMatrix);
+                m_simpleObjSunLightShadows->setMatrix4x4Float("modelMatrix", modelMatrix);
+                m_simpleObjSunLightShadows->setMatrix3x3Float("normalMatrix", glm::mat3(modelMatrix));
+                Beryll::Renderer::drawObject(bullet, modelMatrix, m_simpleObjSunLightShadows);
             }
         }
-
-        for(auto& enemy : m_enemies)
-        {
-            if(enemy.getObj()->getIsEnabledDraw())
-            {
-                modelMatrix = enemy.getObj()->getModelMatrix();
-                m_simpleObjSunLight->setMatrix4x4Float("modelMatrix", modelMatrix);
-                m_simpleObjSunLight->setMatrix3x3Float("normalMatrix", glm::mat3(modelMatrix));
-                Beryll::Renderer::drawObject(enemy.getObj(), modelMatrix, m_simpleObjSunLight);
-            }
-        }
-
-        m_simpleObjSunLightShadows->bind();
-        m_simpleObjSunLightShadows->set3Float("sunLightDir", m_sunLightDir);
-        m_simpleObjSunLightShadows->set3Float("cameraPos", Beryll::Camera::getCameraPos());
-        m_simpleObjSunLightShadows->set1Float("ambientLight", 0.2f);
-        m_simpleObjSunLightShadows->set1Float("sunLightStrength", 1.0f);
-        m_simpleObjSunLightShadows->set1Float("specularLightStrength", 0.3f);
 
         for(const auto& staticObj : m_staticEnv)
         {
@@ -150,6 +116,21 @@ namespace BubbleShooter3D
             Beryll::Renderer::drawObject(staticObj, modelMatrix, m_simpleObjSunLightShadows);
         }
 
+        m_simpleObjSunLightShadowsNormals->bind();
+        m_simpleObjSunLightShadowsNormals->set3Float("sunLightDir", m_sunLightDir);
+        m_simpleObjSunLightShadowsNormals->set3Float("cameraPos", Beryll::Camera::getCameraPos());
+        m_simpleObjSunLightShadowsNormals->set1Float("ambientLight", 0.5f);
+        m_simpleObjSunLightShadowsNormals->set1Float("specularLightStrength", 0.3f);
+
+        for(const auto& normalMapObj : m_objWithNormalMap)
+        {
+            modelMatrix = normalMapObj->getModelMatrix();
+            m_simpleObjSunLightShadowsNormals->setMatrix4x4Float("MVPLightMatrix", m_sunLightVPMatrix * modelMatrix);
+            m_simpleObjSunLightShadowsNormals->setMatrix4x4Float("modelMatrix", modelMatrix);
+            m_simpleObjSunLightShadowsNormals->setMatrix3x3Float("normalMatrix", glm::mat3(modelMatrix));
+            Beryll::Renderer::drawObject(normalMapObj, modelMatrix, m_simpleObjSunLightShadowsNormals);
+        }
+
         m_bulletTrajectory.calculateAndDraw(EnumsAndVars::bulletMass,
                                             EnumsAndVars::bulletGravity,
                                             m_bulletStartPosition,
@@ -157,6 +138,9 @@ namespace BubbleShooter3D
                                             m_bulletImpulseVector,
                                             glm::vec3(1.0f),
                                             m_sunLightDir);
+
+        m_skyBox->draw();
+        //Beryll::ParticleSystem::draw();
     }
 
     void PlayStateSceneLayer::loadPlayer()
@@ -164,13 +148,20 @@ namespace BubbleShooter3D
         m_player = std::make_shared<Player>("models3D/player/Player.fbx",
                                             EnumsAndVars::playerMass,
                                             true,
-                                            Beryll::CollisionFlags::KINEMATIC,
+                                            Beryll::CollisionFlags::DYNAMIC,
                                             Beryll::CollisionGroups::PLAYER,
-                                            Beryll::CollisionGroups::MOVABLE_ENEMY,
+                                            Beryll::CollisionGroups::STATIC_ENVIRONMENT | Beryll::CollisionGroups::JUMPPAD,
                                             Beryll::SceneObjectGroups::PLAYER);
 
-        m_player->getController().moveSpeed = 25.0f;
+        m_player->setOrigin(glm::vec3(0.0f, 5.0f, 0.0f));
+        m_player->getController().moveSpeed = 26.0f;
+        m_player->getController().startJumpPower = 4.0f;
+        m_player->setGravity(glm::vec3(0.0f, -70.0f, 0.0f));
+        m_player->getController().maxStepHeight = m_player->getObjectHeight() * 0.5f;
+        m_player->setAngularFactor(glm::vec3(0.0f, 0.0f, 0.0f));
+        m_player->setLinearFactor(glm::vec3(1.0f, 1.0f, 1.0f));
 
+        m_allDynamicObjects.push_back(m_player);
         m_simpleObjForShadowMap.push_back(m_player);
 
         for(int i = 0; i < 10; ++i)
@@ -180,8 +171,8 @@ namespace BubbleShooter3D
                                                                                 true,
                                                                                 Beryll::CollisionFlags::DYNAMIC,
                                                                                 Beryll::CollisionGroups::PLAYER_BULLET,
-                                                                                Beryll::CollisionGroups::GROUND | Beryll::CollisionGroups::MOVABLE_ENEMY,
-                                                                                Beryll::SceneObjectGroups::GROUND);
+                                                                                Beryll::CollisionGroups::STATIC_ENVIRONMENT,
+                                                                                Beryll::SceneObjectGroups::BULLET);
 
             bullet->disableUpdate();
             bullet->disableCollisionMesh();
@@ -194,63 +185,83 @@ namespace BubbleShooter3D
 
     void PlayStateSceneLayer::loadEnv()
     {
-        const auto ground = std::make_shared<Beryll::SimpleCollidingObject>("models3D/Ground.fbx",
+        const auto groundsNormalMap = Beryll::SimpleCollidingObject::loadManyModelsFromOneFile("models3D/map1/GroundNormalMap.fbx",
                                                                             0.0f,
                                                                             false,
                                                                             Beryll::CollisionFlags::STATIC,
-                                                                            Beryll::CollisionGroups::GROUND,
-                                                                            Beryll::CollisionGroups::PLAYER_BULLET,
-                                                                            Beryll::SceneObjectGroups::GROUND);
+                                                                            Beryll::CollisionGroups::STATIC_ENVIRONMENT,
+                                                                            Beryll::CollisionGroups::PLAYER | Beryll::CollisionGroups::PLAYER_BULLET,
+                                                                            Beryll::SceneObjectGroups::STATIC_ENVIRONMENT);
 
-        m_staticEnv.push_back(ground);
+        for(const auto& obj : groundsNormalMap)
+        {
+            m_objWithNormalMap.push_back(obj);
+        }
+
+        const auto staticEnv = Beryll::SimpleCollidingObject::loadManyModelsFromOneFile("models3D/map1/StaticEnv.fbx",
+                                                                                        0.0f,
+                                                                                        false,
+                                                                                        Beryll::CollisionFlags::STATIC,
+                                                                                        Beryll::CollisionGroups::STATIC_ENVIRONMENT,
+                                                                                        Beryll::CollisionGroups::PLAYER | Beryll::CollisionGroups::PLAYER_BULLET,
+                                                                                        Beryll::SceneObjectGroups::STATIC_ENVIRONMENT);
+
+        for(const auto& obj : staticEnv)
+        {
+            m_staticEnv.push_back(obj);
+            m_simpleObjForShadowMap.push_back(obj);
+        }
+
+        const auto jumpPads = Beryll::SimpleCollidingObject::loadManyModelsFromOneFile("models3D/map1/JumpPads.fbx",
+                                                                                       0.0f,
+                                                                                       false,
+                                                                                       Beryll::CollisionFlags::STATIC,
+                                                                                       Beryll::CollisionGroups::JUMPPAD,
+                                                                                       Beryll::CollisionGroups::PLAYER,
+                                                                                       Beryll::SceneObjectGroups::JUMPPAD);
+
+        for(const auto& obj : jumpPads)
+        {
+            m_staticEnv.push_back(obj);
+        }
+
+        const auto envNoColliders1 = Beryll::SimpleObject::loadManyModelsFromOneFile("models3D/map1/EnvNoColliders.fbx", Beryll::SceneObjectGroups::STATIC_ENVIRONMENT);
+
+        for(const auto& obj : envNoColliders1)
+        {
+            m_staticEnv.push_back(obj);
+            m_simpleObjForShadowMap.push_back(obj);
+        }
     }
 
     void PlayStateSceneLayer::loadEnemies()
     {
-        for(int i = 0; i < 10; ++i) // 10 * 10 = 100
-        {
-            const auto enemies = Beryll::SimpleCollidingObject::loadManyModelsFromOneFile("models3D/Enemies.fbx",
-                                                                                          EnumsAndVars::enemyMass,
-                                                                                          false,
-                                                                                          Beryll::CollisionFlags::DYNAMIC,
-                                                                                          Beryll::CollisionGroups::MOVABLE_ENEMY,
-                                                                                          Beryll::CollisionGroups::PLAYER | Beryll::CollisionGroups::PLAYER_BULLET,
-                                                                                          Beryll::SceneObjectGroups::ENEMY);
 
-            for(auto& obj : enemies)
-            {
-                obj->setGravity(EnumsAndVars::enemyGravity);
-
-                m_enemies.emplace_back(obj);
-                m_allDynamicObjects.push_back(obj);
-                m_simpleObjForShadowMap.push_back(obj);
-                m_enemies.back().disable();
-            }
-        }
-
-        spawnEnemy();
-        spawnEnemy();
-        spawnEnemy();
-        spawnEnemy();
-        spawnEnemy();
     }
 
     void PlayStateSceneLayer::loadShadersAndLight()
     {
-        m_simpleObjSunLight = Beryll::Renderer::createShader("shaders/GLES/SimpleObjectSunLight.vert",
-                                                             "shaders/GLES/SimpleObjectSunLight.frag");
-        m_simpleObjSunLight->bind();
-        m_simpleObjSunLight->activateDiffuseTextureMat1();
-
         m_simpleObjSunLightShadows = Beryll::Renderer::createShader("shaders/GLES/SimpleObjectSunLightShadows.vert",
                                                                     "shaders/GLES/SimpleObjectSunLightShadows.frag");
         m_simpleObjSunLightShadows->bind();
         m_simpleObjSunLightShadows->activateDiffuseTextureMat1();
         m_simpleObjSunLightShadows->activateShadowMapTexture();
 
-        m_shadowMap = Beryll::Renderer::createShadowMap(2000, 2000);
+        m_simpleObjSunLightShadowsNormals = Beryll::Renderer::createShader("shaders/GLES/SimpleObjectSunLightShadowsNormals.vert",
+                                                                           "shaders/GLES/SimpleObjectSunLightShadowsNormals.frag");
+        m_simpleObjSunLightShadowsNormals->bind();
+        m_simpleObjSunLightShadowsNormals->activateDiffuseTextureMat1();
+        m_simpleObjSunLightShadowsNormals->activateNormalMapTextureMat1();
+        m_simpleObjSunLightShadowsNormals->activateShadowMapTexture();
 
-        m_dirToSun = glm::normalize(glm::vec3(0.05f, 2.0f, 0.0f));
+        m_animatedObjSunLight = Beryll::Renderer::createShader("shaders/GLES/AnimatedObjectSunLight.vert",
+                                                               "shaders/GLES/AnimatedObjectSunLight.frag");
+        m_animatedObjSunLight->bind();
+        m_animatedObjSunLight->activateDiffuseTextureMat1();
+
+        m_shadowMap = Beryll::Renderer::createShadowMap(3000, 3000);
+
+        m_dirToSun = glm::normalize(glm::vec3(1.0f, 2.0f, -0.5f));
         m_sunLightDir = -m_dirToSun;
     }
 
@@ -318,24 +329,25 @@ namespace BubbleShooter3D
                 m_lastFingerMovePosY = f.SDL2ScreenPos.y;
 
                 m_angleXZ += deltaX * EnumsAndVars::Settings::cameraHorizontalSpeed;
-                m_angleYZ -= deltaY * EnumsAndVars::Settings::cameraVerticalSpeed;
-                if(m_angleYZ < -40.0f) m_angleYZ = -40.0f;
-                if(m_angleYZ > 70.0f) m_angleYZ = 70.0f;
-                //BR_INFO("m_angleYZ %f", m_angleYZ);
+                m_angleY += deltaY * EnumsAndVars::Settings::cameraVerticalSpeed;
+                if(m_angleY < -35.0f) m_angleY = -35.0f; // Eye up.
+                if(m_angleY > 65.0f) m_angleY = 65.0f; // Eye down.
+                //BR_INFO("m_angleY %f", m_angleY);
 
                 // Euler angles.
                 float m_angleXZRadians = glm::radians(m_angleXZ);
-                float m_angleYZRadians = glm::radians(m_angleYZ);
-                m_cameraOffset.x = glm::cos(m_angleXZRadians) * glm::cos(m_angleYZRadians);
-                m_cameraOffset.y = glm::sin(m_angleYZRadians);
-                m_cameraOffset.z = glm::sin(m_angleXZRadians) * glm::cos(m_angleYZRadians);
+                float m_angleYRadians = glm::radians(m_angleY);
+                m_cameraOffset.x = glm::cos(m_angleXZRadians) * glm::cos(m_angleYRadians);
+                m_cameraOffset.y = glm::sin(m_angleYRadians);
+                m_cameraOffset.z = glm::sin(m_angleXZRadians) * glm::cos(m_angleYRadians);
+                m_cameraOffset = glm::normalize(m_cameraOffset);
                 break;
             }
         }
 
         m_cameraFront = m_player->getOrigin();
-        m_cameraFront.y += 8.0f;
-        Beryll::Camera::setCameraPos(m_cameraFront - m_cameraOffset * m_cameraDistance);
+        m_cameraFront.y += 15.0f;
+        Beryll::Camera::setCameraPos(m_cameraFront + m_cameraOffset * m_cameraDistance);
         Beryll::Camera::setCameraFrontPos(m_cameraFront);
         Beryll::Camera::updateCameraVectors();
 
@@ -349,7 +361,7 @@ namespace BubbleShooter3D
 
         // Update shoot dir after camera.
         float angleBetweenWorldUpAndCameraBack = BeryllUtils::Common::getAngleInRadians(BeryllConstants::worldUp, Beryll::Camera::getCameraBackDirectionXYZ());
-        m_bulletAngleRadians = angleBetweenWorldUpAndCameraBack - glm::half_pi<float>() + 0.1745f; // + 10 degrees.
+        m_bulletAngleRadians = angleBetweenWorldUpAndCameraBack - glm::half_pi<float>() + 0.2618f; // + 15 degrees.
 
         m_bulletImpulseVector = m_player->getFaceDirXZ();
         m_bulletImpulseVector.y = glm::tan(m_bulletAngleRadians);
@@ -377,69 +389,6 @@ namespace BubbleShooter3D
 
             ++m_currentBulletIndex;
             EnumsAndVars::shotTimeSec = EnumsAndVars::playTimeSec;
-        }
-    }
-
-    void PlayStateSceneLayer::handleEnemies()
-    {
-        for(Enemy& enemy : m_enemies)
-        {
-            if(!enemy.getIsEnabled())
-                continue;
-
-            glm::vec3 linearVeloc = enemy.getObj()->getLinearVelocity();
-            glm::vec3 moveDir = glm::normalize(linearVeloc);
-            glm::vec3 newMoveDir{0.0f};
-            const float actualSpeed = glm::length(linearVeloc);
-            glm::vec3 origin = enemy.getObj()->getOrigin();
-            bool changeMoveDir = false;
-
-            if(origin.x < m_enemyMinX)
-            {
-                changeMoveDir = true;
-                origin.x = m_enemyMinX;
-                newMoveDir = glm::reflect(moveDir, glm::vec3{1.0f, 0.0f, 0.0f});
-            }
-            else if(origin.x > m_enemyMaxX)
-            {
-                changeMoveDir = true;
-                origin.x = m_enemyMaxX;
-                newMoveDir = glm::reflect(moveDir, glm::vec3{-1.0f, 0.0f, 0.0f});
-            }
-            else if(origin.z < m_enemyMinZ)
-            {
-                changeMoveDir = true;
-                origin.z = m_enemyMinZ;
-                newMoveDir = glm::reflect(moveDir, glm::vec3{0.0f, 0.0f, 1.0f});
-            }
-            else if(origin.z > m_enemyMaxZ)
-            {
-                changeMoveDir = true;
-                origin.z = m_enemyMaxZ;
-                newMoveDir = glm::reflect(moveDir, glm::vec3{0.0f, 0.0f, -1.0f});
-            }
-            else if(origin.y < enemy.getObj()->getFromOriginToBottom())
-            {
-                origin.y = enemy.getObj()->getFromOriginToBottom();
-                enemy.getObj()->setOrigin(origin, false);
-                linearVeloc.y = 0;
-                enemy.getObj()->setLinearVelocity(linearVeloc);
-                glm::vec3 impulse = BeryllConstants::worldUp * (200.0f + 200.0f * Beryll::RandomGenerator::getFloat());
-                enemy.getObj()->applyCentralImpulse(impulse);
-            }
-
-            if(changeMoveDir)
-            {
-                enemy.getObj()->setOrigin(origin, false);
-                moveDir = glm::normalize(newMoveDir);
-
-                if(glm::any(glm::isnan(moveDir)))
-                {
-                    BR_ASSERT(false, "%s", "if(glm::any(glm::isnan(moveDir)))");
-                }
-
-                enemy.getObj()->setLinearVelocity(moveDir * actualSpeed);
-            }
         }
     }
 
@@ -474,22 +423,5 @@ namespace BubbleShooter3D
         {
             m_player->setOrigin(origin, false);
         }
-    }
-
-    void PlayStateSceneLayer::spawnEnemy()
-    {
-        if(m_currentEnemyIndex >= m_enemies.size())
-            m_currentEnemyIndex = 0;
-
-        glm::vec3 newOrigin = m_player->getOrigin();
-        newOrigin.y + 30.0f + Beryll::RandomGenerator::getFloat() * 30.0f;
-
-        float xDir = Beryll::RandomGenerator::getFloat() * 2.0f - 1.0f;
-        float zDir = Beryll::RandomGenerator::getFloat() * 2.0f - 1.0f;
-        m_enemies[m_currentEnemyIndex].enable();
-        m_enemies[m_currentEnemyIndex].getObj()->setOrigin(newOrigin);
-        m_enemies[m_currentEnemyIndex].getObj()->applyCentralImpulse(glm::normalize(glm::vec3(xDir, 0.0f, zDir)) * 200.0f);
-
-        ++m_currentEnemyIndex;
     }
 }

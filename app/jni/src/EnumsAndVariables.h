@@ -15,7 +15,7 @@ namespace EnumsAndVars
     };
 
     // Player
-    constexpr inline float playerMass = 0.0f;
+    constexpr inline float playerMass = 1.0f;
 
     // Player bullet
     constexpr inline float bulletMass = 0.001f;
