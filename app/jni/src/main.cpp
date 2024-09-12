@@ -7,13 +7,13 @@ int main(int argc, char* argv[])
 
     Beryll::GameLoop::create(Beryll::ScreenOrientation::MOBILE_LANDSCAPE_AND_FLIPPED);
 
-    Beryll::GameLoop::setFPSLimit(120.0f);
+    Beryll::GameLoop::setFPSLimit(60.0f);
 
     Beryll::Camera::setProjectionNearClipPlane(5.0f);
     Beryll::Camera::setProjectionFarClipPlane(1500.0f);
     Beryll::Camera::setObjectsViewDistance(1500.0f);
 
-    //Beryll::Physics::setResolution(1);
+    //Beryll::Physics::setResolution(2);
     //Beryll::Physics::setMinAcceptableFPS(20.0f);
 
     Beryll::Renderer::enableFaceCulling();

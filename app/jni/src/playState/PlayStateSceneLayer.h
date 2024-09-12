@@ -26,7 +26,7 @@ namespace BubbleShooter3D
         void handleControls();
         void handleCamera();
         void shootBullet();
-        void handlePlayer();
+        void checkMapBorders();
 
         std::shared_ptr<PlayStateGUILayer> m_gui;
 
@@ -51,10 +51,10 @@ namespace BubbleShooter3D
         // Camera.
         float m_lastFingerMovePosX = 0.0f;
         float m_lastFingerMovePosY = 0.0f;
-        float m_angleXZ = 180.0f;
-        float m_angleY = 15.0f;
-        glm::vec3 m_cameraOffset = glm::normalize(glm::vec3{-0.96593f, 0.25882f, 0.0f});
-        glm::vec3 m_cameraFront{0.0f, 0.0f, 0.0f};
+        float m_eyesLookAngleXZ = 0.0f; // Degrees.
+        float m_eyesLookAngleY = -15.0f; // Degrees.
+        glm::vec3 m_cameraOffset{0.0f};
+        glm::vec3 m_cameraFront{0.0f};
         float m_cameraDistance = 70.0f;
 
         std::unique_ptr<Beryll::SkyBox> m_skyBox;

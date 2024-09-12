@@ -9,9 +9,9 @@ namespace BubbleShooter3D
     // Sounds.
     std::string Sounds::m_bulletHit1 = "sounds/BulletHit1.wav";
     std::string Sounds::m_bulletHit2 = "sounds/BulletHit2.wav";
-
     float Sounds::m_bulletHitTime = 0.0f;
     float Sounds::m_bulletHitDelay = 0.1f;
+    std::string Sounds::m_jumppad = "sounds/Jumppad.wav";
 
     void Sounds::reset()
     {
@@ -24,6 +24,7 @@ namespace BubbleShooter3D
 
         Beryll::SoundsManager::loadWAV(m_bulletHit1, 20);
         Beryll::SoundsManager::loadWAV(m_bulletHit2, 20);
+        Beryll::SoundsManager::loadWAV(m_jumppad, 80);
 
         m_loaded = true;
     }
@@ -51,6 +52,10 @@ namespace BubbleShooter3D
                 else
                     Beryll::SoundsManager::playWAV(m_bulletHit2);
             }
+        }
+        else if(type == SoundType::JUMPPAD)
+        {
+            Beryll::SoundsManager::playWAV(m_jumppad);
         }
     }
 }

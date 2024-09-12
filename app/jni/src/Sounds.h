@@ -7,7 +7,8 @@ namespace BubbleShooter3D
     enum class SoundType
     {
         NONE,
-        BULLET_HIT
+        BULLET_HIT,
+        JUMPPAD
     };
 
     class Sounds
@@ -31,5 +32,6 @@ namespace BubbleShooter3D
         static std::string m_bulletHit2;
         static float m_bulletHitTime;
         static float m_bulletHitDelay;
+        static std::string m_jumppad;
     };
 }

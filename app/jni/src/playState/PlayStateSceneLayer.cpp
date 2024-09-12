@@ -24,6 +24,7 @@ namespace BubbleShooter3D
         Sounds::loadSounds();
         Sounds::reset();
         EnumsAndVars::reset();
+        Beryll::TimeStep::fixateTime();
 
         //BR_INFO(" X:%f Y:%f Z:%f", .x, .y, .z);
         //BR_INFO("%s", "");
@@ -41,8 +42,9 @@ namespace BubbleShooter3D
         EnumsAndVars::playTimeSec += Beryll::TimeStep::getTimeStepSec();
         Sounds::update();
 
+        m_player->update();
         handleControls();
-        handlePlayer();
+        checkMapBorders();
     }
 
     void PlayStateSceneLayer::updateAfterPhysics()
@@ -51,6 +53,7 @@ namespace BubbleShooter3D
         {
             if(so->getIsEnabledUpdate())
                 so->updateAfterPhysics();
+
 
             if(so->getOrigin().y < -50.0f)
             {
@@ -76,9 +79,9 @@ namespace BubbleShooter3D
 
         m_sunLightVPMatrix = lightProjection * lightView;
 
-        Beryll::Renderer::disableFaceCulling();
+        //Beryll::Renderer::disableFaceCulling();
         m_shadowMap->drawIntoShadowMap(m_simpleObjForShadowMap, {}, m_sunLightVPMatrix);
-        Beryll::Renderer::enableFaceCulling();
+        //Beryll::Renderer::enableFaceCulling();
 
         // 2. Draw scene.
         glm::mat4 modelMatrix{1.0f};
@@ -153,18 +156,16 @@ namespace BubbleShooter3D
                                             Beryll::CollisionGroups::STATIC_ENVIRONMENT | Beryll::CollisionGroups::JUMPPAD,
                                             Beryll::SceneObjectGroups::PLAYER);
 
-        m_player->setOrigin(glm::vec3(0.0f, 5.0f, 0.0f));
-        m_player->getController().moveSpeed = 26.0f;
-        m_player->getController().startJumpPower = 4.0f;
+        m_player->setOrigin(glm::vec3(350.0f, 5.0f, -150.0f));
+        m_player->getController().moveSpeed = 50.0f;
         m_player->setGravity(glm::vec3(0.0f, -70.0f, 0.0f));
-        m_player->getController().maxStepHeight = m_player->getObjectHeight() * 0.5f;
-        m_player->setAngularFactor(glm::vec3(0.0f, 0.0f, 0.0f));
+        m_player->setAngularFactor(glm::vec3(0.0f));
         m_player->setLinearFactor(glm::vec3(1.0f, 1.0f, 1.0f));
 
         m_allDynamicObjects.push_back(m_player);
         m_simpleObjForShadowMap.push_back(m_player);
 
-        for(int i = 0; i < 10; ++i)
+        for(int i = 0; i < 40; ++i)
         {
             const auto bullet = std::make_shared<Beryll::SimpleCollidingObject>("models3D/player/PlayerBullet.fbx",
                                                                                 EnumsAndVars::bulletMass,
@@ -279,7 +280,7 @@ namespace BubbleShooter3D
                 // Move on XZ plane.
                 glm::vec3 moveDir = needRotationToCamera * glm::vec4(joyDIr.y, 0.0f, joyDIr.x, 1.0f);
 
-                m_player->getController().moveToDirection(moveDir, false, true, true);
+                m_player->getController().moveToDirection(moveDir, false, false);
             }
         }
         else
@@ -328,30 +329,29 @@ namespace BubbleShooter3D
                 m_lastFingerMovePosX = f.SDL2ScreenPos.x;
                 m_lastFingerMovePosY = f.SDL2ScreenPos.y;
 
-                m_angleXZ += deltaX * EnumsAndVars::Settings::cameraHorizontalSpeed;
-                m_angleY += deltaY * EnumsAndVars::Settings::cameraVerticalSpeed;
-                if(m_angleY < -35.0f) m_angleY = -35.0f; // Eye up.
-                if(m_angleY > 65.0f) m_angleY = 65.0f; // Eye down.
-                //BR_INFO("m_angleY %f", m_angleY);
-
-                // Euler angles.
-                float m_angleXZRadians = glm::radians(m_angleXZ);
-                float m_angleYRadians = glm::radians(m_angleY);
-                m_cameraOffset.x = glm::cos(m_angleXZRadians) * glm::cos(m_angleYRadians);
-                m_cameraOffset.y = glm::sin(m_angleYRadians);
-                m_cameraOffset.z = glm::sin(m_angleXZRadians) * glm::cos(m_angleYRadians);
-                m_cameraOffset = glm::normalize(m_cameraOffset);
+                m_eyesLookAngleXZ += deltaX * EnumsAndVars::Settings::cameraHorizontalSpeed;
+                m_eyesLookAngleY -= deltaY * EnumsAndVars::Settings::cameraVerticalSpeed;
+                if(m_eyesLookAngleY > 35.0f) m_eyesLookAngleY = 35.0f; // Eye up.
+                if(m_eyesLookAngleY < -75.0f) m_eyesLookAngleY = -75.0f; // Eye down.
+                //BR_INFO("m_eyesLookAngleY %f", m_eyesLookAngleY);
                 break;
             }
         }
 
+        // Euler angles.
+        float m_eyesLookAngleXZRadians = glm::radians(m_eyesLookAngleXZ);
+        float m_eyesLookAngleYRadians = glm::radians(m_eyesLookAngleY);
+        m_cameraOffset.x = glm::cos(m_eyesLookAngleXZRadians) * glm::cos(m_eyesLookAngleYRadians);
+        m_cameraOffset.y = glm::sin(m_eyesLookAngleYRadians);
+        m_cameraOffset.z = glm::sin(m_eyesLookAngleXZRadians) * glm::cos(m_eyesLookAngleYRadians);
+        m_cameraOffset = glm::normalize(m_cameraOffset);
+
         m_cameraFront = m_player->getOrigin();
         m_cameraFront.y += 15.0f;
-        Beryll::Camera::setCameraPos(m_cameraFront + m_cameraOffset * m_cameraDistance);
+        Beryll::Camera::setCameraPos(m_cameraFront - m_cameraOffset * m_cameraDistance);
         Beryll::Camera::setCameraFrontPos(m_cameraFront);
         Beryll::Camera::updateCameraVectors();
 
-        //if(m_3DSceneTouched && m_gui->playerJoystick->getIsTouched())
         m_player->rotateToDirection(Beryll::Camera::getCameraFrontDirectionXZ(), true);
 
         // Move camera a bit to left side(player's character will not directly on the middle of the screen).
@@ -392,7 +392,7 @@ namespace BubbleShooter3D
         }
     }
 
-    void PlayStateSceneLayer::handlePlayer()
+    void PlayStateSceneLayer::checkMapBorders()
     {
         glm::vec3 origin = m_player->getOrigin();
         bool resetOrigin = false;

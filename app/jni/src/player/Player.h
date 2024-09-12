@@ -16,6 +16,8 @@ namespace BubbleShooter3D
                Beryll::SceneObjectGroups sceneGroup);
         ~Player() override;
 
+        void update();
+
     private:
 
     };
