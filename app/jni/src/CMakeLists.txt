@@ -16,7 +16,10 @@ add_library(main SHARED main.cpp
                         playState/PlayStateSceneLayer.cpp
                         player/Player.cpp
                         player/PlayerBulletAirTrajectory.cpp
-                        enemy/Enemy.cpp
+                        enemy/BaseEnemy.cpp
+                        enemy/MovableEnemy.cpp
+                        enemy/StaticEnemy.cpp
+                        pathfinding/AStar.cpp
             )
 
 target_include_directories(main PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})

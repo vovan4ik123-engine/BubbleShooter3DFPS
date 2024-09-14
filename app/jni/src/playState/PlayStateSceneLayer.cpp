@@ -1,6 +1,7 @@
 #include "PlayStateSceneLayer.h"
 #include "EnumsAndVariables.h"
 #include "Sounds.h"
+#include "enemy/MovableEnemy.h"
 
 namespace BubbleShooter3D
 {
@@ -9,8 +10,8 @@ namespace BubbleShooter3D
         m_ID = Beryll::LayerID::PLAY_SCENE;
 
         m_playerBullets.reserve(200);
-        m_enemies.reserve(700);
-        m_allDynamicObjects.reserve(200);
+        m_allAnimatedEnemies.reserve(700);
+        m_animatedOrDynamicObjects.reserve(200);
         m_staticEnv.reserve(10);
         m_simpleObjForShadowMap.reserve(10);
 
@@ -18,6 +19,25 @@ namespace BubbleShooter3D
         loadEnv();
         loadEnemies();
         loadShadersAndLight();
+
+        m_pathFinderEnemies = AStar(m_mapMinX, m_mapMaxX, m_mapMinZ, m_mapMaxZ, 20);
+        std::vector<glm::vec3> walls = BeryllUtils::Common::loadMeshVerticesToVector("models3D/map1/PathEnemiesWalls.fbx");
+        for(const auto& wall : walls)
+        {
+            m_pathFinderEnemies.addWallPosition({(int)std::roundf(wall.x), (int)std::roundf(wall.z)});
+        }
+
+        BR_INFO("Map1 pathfinder walls: %d", walls.size());
+
+        std::vector<glm::vec3> allowedPoints = BeryllUtils::Common::loadMeshVerticesToVector("models3D/map1/PathEnemiesAllowedPositions.fbx");
+        m_pathAllowedPositionsXZ.reserve(allowedPoints.size());
+        for(const auto& point : allowedPoints)
+        {
+            m_pathAllowedPositionsXZ.push_back({(int)std::roundf(point.x), (int)std::roundf(point.z)});
+        }
+
+        BR_INFO("Map1 pathfinder allowed points: %d", m_pathAllowedPositionsXZ.size());
+        m_pointsToSpawnEnemies.reserve(m_pathAllowedPositionsXZ.size());
 
         m_skyBox = Beryll::Renderer::createSkyBox("skyboxes/nightClouds");
 
@@ -45,24 +65,47 @@ namespace BubbleShooter3D
         m_player->update();
         handleControls();
         checkMapBorders();
+        updatePathfindingAndSpawnEnemies();
+        for(const auto& enemy : m_allAnimatedEnemies)
+        {
+            if (enemy->getIsEnabledUpdate())
+                enemy->update(m_player->getOrigin());
+        }
     }
 
     void PlayStateSceneLayer::updateAfterPhysics()
     {
-        for(const std::shared_ptr<Beryll::SceneObject>& so : m_allDynamicObjects)
+        const float distanceToEnableObjects = m_cameraDistance * 1.1f;
+
+        for(const std::shared_ptr<Beryll::SceneObject>& so : m_animatedOrDynamicObjects)
         {
             if(so->getIsEnabledUpdate())
+            {
                 so->updateAfterPhysics();
 
+                if(so->getSceneObjectGroup() == Beryll::SceneObjectGroups::ENEMY)
+                {
+                    if( //glm::distance(m_player->getOrigin(), so->getOrigin()) < distanceToEnableObjects ||
+                       Beryll::Camera::getIsSeeObject(so->getOrigin()))
+                        so->enableDraw();
+                    else
+                        so->disableDraw();
+                }
 
-            if(so->getOrigin().y < -50.0f)
+                if(so->getOrigin().y < -50.0f)
+                {
+                    so->disableUpdate();
+                    so->disableCollisionMesh();
+                    so->disableDraw();
+                }
+            }
+            else
             {
-                so->disableUpdate();
-                so->disableCollisionMesh();
                 so->disableDraw();
             }
         }
 
+        killEnemies();
         handleCamera();
     }
 
@@ -85,6 +128,20 @@ namespace BubbleShooter3D
 
         // 2. Draw scene.
         glm::mat4 modelMatrix{1.0f};
+
+        m_animatedObjSunLight->bind();
+        m_animatedObjSunLight->set3Float("sunLightDir", m_sunLightDir);
+        m_animatedObjSunLight->set1Float("ambientLight", 0.7f);
+
+        for(const auto& animObj : m_allAnimatedEnemies)
+        {
+            if(animObj->getIsEnabledDraw())
+            {
+                modelMatrix = animObj->getModelMatrix();
+                m_animatedObjSunLight->setMatrix3x3Float("normalMatrix", glm::mat3(modelMatrix));
+                Beryll::Renderer::drawObject(animObj, modelMatrix, m_animatedObjSunLight);
+            }
+        }
 
         m_simpleObjSunLightShadows->bind();
         m_simpleObjSunLightShadows->set3Float("sunLightDir", m_sunLightDir);
@@ -162,7 +219,7 @@ namespace BubbleShooter3D
         m_player->setAngularFactor(glm::vec3(0.0f));
         m_player->setLinearFactor(glm::vec3(1.0f, 1.0f, 1.0f));
 
-        m_allDynamicObjects.push_back(m_player);
+        m_animatedOrDynamicObjects.push_back(m_player);
         m_simpleObjForShadowMap.push_back(m_player);
 
         for(int i = 0; i < 40; ++i)
@@ -172,7 +229,7 @@ namespace BubbleShooter3D
                                                                                 true,
                                                                                 Beryll::CollisionFlags::DYNAMIC,
                                                                                 Beryll::CollisionGroups::PLAYER_BULLET,
-                                                                                Beryll::CollisionGroups::STATIC_ENVIRONMENT,
+                                                                                Beryll::CollisionGroups::STATIC_ENVIRONMENT | Beryll::CollisionGroups::MOVABLE_ENEMY,
                                                                                 Beryll::SceneObjectGroups::BULLET);
 
             bullet->disableUpdate();
@@ -180,7 +237,7 @@ namespace BubbleShooter3D
             bullet->disableDraw();
 
             m_playerBullets.push_back(bullet);
-            m_allDynamicObjects.push_back(bullet);
+            m_animatedOrDynamicObjects.push_back(bullet);
         }
     }
 
@@ -191,7 +248,8 @@ namespace BubbleShooter3D
                                                                             false,
                                                                             Beryll::CollisionFlags::STATIC,
                                                                             Beryll::CollisionGroups::STATIC_ENVIRONMENT,
-                                                                            Beryll::CollisionGroups::PLAYER | Beryll::CollisionGroups::PLAYER_BULLET,
+                                                                            Beryll::CollisionGroups::PLAYER | Beryll::CollisionGroups::PLAYER_BULLET |
+                                                                            Beryll::CollisionGroups::RAY_FOR_ENVIRONMENT,
                                                                             Beryll::SceneObjectGroups::STATIC_ENVIRONMENT);
 
         for(const auto& obj : groundsNormalMap)
@@ -204,7 +262,8 @@ namespace BubbleShooter3D
                                                                                         false,
                                                                                         Beryll::CollisionFlags::STATIC,
                                                                                         Beryll::CollisionGroups::STATIC_ENVIRONMENT,
-                                                                                        Beryll::CollisionGroups::PLAYER | Beryll::CollisionGroups::PLAYER_BULLET,
+                                                                                        Beryll::CollisionGroups::PLAYER | Beryll::CollisionGroups::PLAYER_BULLET |
+                                                                                        Beryll::CollisionGroups::RAY_FOR_ENVIRONMENT,
                                                                                         Beryll::SceneObjectGroups::STATIC_ENVIRONMENT);
 
         for(const auto& obj : staticEnv)
@@ -237,7 +296,40 @@ namespace BubbleShooter3D
 
     void PlayStateSceneLayer::loadEnemies()
     {
+        for(int i = 0; i < 600; ++i)
+        {
+            auto skeleton = std::make_shared<MovableEnemy>("models3D/enemies/Skeleton.fbx",
+                                                           0.0f,
+                                                           false,
+                                                           Beryll::CollisionFlags::STATIC,
+                                                           Beryll::CollisionGroups::MOVABLE_ENEMY,
+                                                           Beryll::CollisionGroups::PLAYER_BULLET,
+                                                           Beryll::SceneObjectGroups::ENEMY);
 
+            skeleton->setCurrentAnimationByIndex(EnumsAndVars::AnimationIndexes::run, false, false, true);
+            skeleton->setDefaultAnimationByIndex(EnumsAndVars::AnimationIndexes::stand);
+            skeleton->unitType = UnitType::ENEMY_1;
+            skeleton->attackType = AttackType::RANGE_DAMAGE_ONE;
+            skeleton->attackSound = SoundType::NONE;
+            skeleton->attackHitSound = SoundType::NONE;
+            skeleton->attackParticlesColor = glm::vec3{0.4258f, 0.84f, 0.68f};
+            skeleton->attackParticlesSize = 0.3f;
+            skeleton->dieSound = SoundType::NONE;
+            skeleton->castRayToFindYPos = true;
+
+            skeleton->damage = 1.5f;
+            skeleton->attackDistance = 80.0f + Beryll::RandomGenerator::getFloat() * 120.0f;
+            skeleton->timeBetweenAttacks = 2.0f + Beryll::RandomGenerator::getFloat() * 0.5f;
+
+            skeleton->garbageAmountToDie = 10;
+            skeleton->reducePlayerSpeedWhenDie = 1.0f;
+            skeleton->experienceWhenDie = 25;
+            skeleton->getController().moveSpeed = 55.0f;
+
+            m_animatedOrDynamicObjects.push_back(skeleton);
+            m_allAnimatedEnemies.push_back(skeleton);
+            //m_animatedObjForShadowMap.push_back(skeleton);
+        }
     }
 
     void PlayStateSceneLayer::loadShadersAndLight()
@@ -367,7 +459,7 @@ namespace BubbleShooter3D
         m_bulletImpulseVector.y = glm::tan(m_bulletAngleRadians);
         m_bulletImpulseVector = glm::normalize(m_bulletImpulseVector);
         m_bulletImpulseVector *= EnumsAndVars::bulletMass;
-        m_bulletImpulseVector *= m_gui->slider3->getValue();
+        m_bulletImpulseVector *= 600.0f; // m_gui->slider3->getValue();
 
         m_bulletStartPosition = m_player->getOrigin() + m_player->getFaceDirXZ() * 4.0f;
         m_bulletStartPosition.y += 4.0f;
@@ -397,31 +489,230 @@ namespace BubbleShooter3D
         glm::vec3 origin = m_player->getOrigin();
         bool resetOrigin = false;
 
-        if(origin.x < m_playerMinX)
+        if(origin.x < m_mapMinX)
         {
             resetOrigin = true;
-            origin.x = m_playerMinX;
+            origin.x = m_mapMinX;
         }
-        else if(origin.x > m_playerMaxX)
+        else if(origin.x > m_mapMaxX)
         {
             resetOrigin = true;
-            origin.x = m_playerMaxX;
+            origin.x = m_mapMaxX;
         }
 
-        if(origin.z < m_playerMinZ)
+        if(origin.z < m_mapMinZ)
         {
             resetOrigin = true;
-            origin.z = m_playerMinZ;
+            origin.z = m_mapMinZ;
         }
-        else if(origin.z > m_playerMaxZ)
+        else if(origin.z > m_mapMaxZ)
         {
             resetOrigin = true;
-            origin.z = m_playerMaxZ;
+            origin.z = m_mapMaxZ;
         }
 
         if(resetOrigin)
         {
             m_player->setOrigin(origin, false);
+        }
+    }
+
+    void PlayStateSceneLayer::updatePathfindingAndSpawnEnemies()
+    {
+        // In first frame:
+        // 1. Find closest point to player.
+        // 2. Find allowed points to spawn enemies.
+        if(m_pathFindingIteration == 0)
+        {
+            ++m_pathFindingIteration; // Go to next iteration in next frame.
+
+            m_pointsToSpawnEnemies.clear();
+
+            glm::vec2 playerPosXZ{m_player->getOrigin().x, m_player->getOrigin().z};
+            float distanceToClosestPoint = std::numeric_limits<float>::max();
+            float distanceToCurrent = 0.0f;
+
+            for(const glm::ivec2& point : m_pathAllowedPositionsXZ)
+            {
+                distanceToCurrent = glm::distance(playerPosXZ, glm::vec2(float(point.x), float(point.y)));
+
+                // 1.
+                if(distanceToCurrent < distanceToClosestPoint)
+                {
+                    distanceToClosestPoint = distanceToCurrent;
+                    m_playerClosestAllowedPos = point;
+                }
+
+                // 2.
+                if(distanceToCurrent > EnumsAndVars::enemiesMinDistanceToSpawn && distanceToCurrent < EnumsAndVars::enemiesMaxDistanceToSpawn)
+                {
+                    // We can spawn enemy at this point.
+                    m_pointsToSpawnEnemies.push_back(point);
+                }
+            }
+
+            BR_ASSERT((!m_pointsToSpawnEnemies.empty()), "%s", "m_allowedPointsToSpawnEnemies empty.");
+        }
+            // In second frame:
+            // 1. Clear blocked positions.
+            // 2. Spawn enemies. In subclass.
+        else if(m_pathFindingIteration == 1)
+        {
+            ++m_pathFindingIteration;
+
+            // 1.
+            m_pathFinderEnemies.clearBlockedPositions();
+
+            // 2.
+            spawnEnemies();
+        }
+            // In third frame:
+            // 1. Update paths for enemies.
+        else if(m_pathFindingIteration == 2)
+        {
+            int enemiesUpdated = 0;
+            int& i = EnumsAndVars::enemiesCurrentPathfindingIndex;
+            for( ; i < m_allAnimatedEnemies.size(); ++i)
+            {
+                if(enemiesUpdated >= EnumsAndVars::enemiesMaxPathfindingInOneFrame)
+                    break;
+
+                if(m_allAnimatedEnemies[i]->getIsEnabledUpdate() && m_allAnimatedEnemies[i]->getIsCanMove())
+                {
+                    m_allAnimatedEnemies[i]->setPathArray(m_pathFinderEnemies.findPath(m_allAnimatedEnemies[i]->getCurrentPointToMove2DInt(), m_playerClosestAllowedPos, 7), 0);
+
+                    m_pathFinderEnemies.addBlockedPosition(m_allAnimatedEnemies[i]->getCurrentPointToMove2DInt());
+
+                    ++enemiesUpdated;
+                }
+            }
+
+            if(EnumsAndVars::enemiesCurrentPathfindingIndex >= m_allAnimatedEnemies.size())
+            {
+                // All enemies were updated.
+                //BR_INFO("Path for all enemies updated. Last index: %d", EnumsAndVariables::enemiesCurrentPathfindingIndex);
+                EnumsAndVars::enemiesCurrentPathfindingIndex = 0;
+                m_pathFindingIteration = 0; // Start from start again in next frame.
+            }
+        }
+    }
+
+    void PlayStateSceneLayer::spawnEnemies()
+    {
+        // Prepare waves.
+        if(m_prepareWave1 && EnumsAndVars::playTimeSec > m_enemiesWave1Time)
+        {
+            m_prepareWave1 = false;
+
+            EnumsAndVars::enemiesMaxActiveCountOnGround = 0;
+
+            int skeletonCount = 0;
+            for(auto& enemy : m_allAnimatedEnemies)
+            {
+                enemy->isCanBeSpawned = false;
+
+                if(skeletonCount < 200 && enemy->unitType == UnitType::ENEMY_1)
+                {
+                    enemy->isCanBeSpawned = true;
+                    ++skeletonCount;
+                    ++EnumsAndVars::enemiesMaxActiveCountOnGround;
+                }
+            }
+
+            BR_INFO("Prepare wave 1. Max enemies: %d", EnumsAndVars::enemiesMaxActiveCountOnGround);
+        }
+        if(m_prepareWave2 && EnumsAndVars::playTimeSec > m_enemiesWave2Time)
+        {
+            m_prepareWave2 = false;
+
+            EnumsAndVars::enemiesMaxActiveCountOnGround = 0;
+
+            int skeletonCount = 0;
+            for(auto& enemy : m_allAnimatedEnemies)
+            {
+                enemy->isCanBeSpawned = false;
+
+                if(skeletonCount < 400 && enemy->unitType == UnitType::ENEMY_1)
+                {
+                    enemy->isCanBeSpawned = true;
+                    ++skeletonCount;
+                    ++EnumsAndVars::enemiesMaxActiveCountOnGround;
+                }
+            }
+
+            BR_INFO("Prepare wave 2. Max enemies: %d", EnumsAndVars::enemiesMaxActiveCountOnGround);
+        }
+        if(m_prepareWave3 && EnumsAndVars::playTimeSec > m_enemiesWave3Time)
+        {
+            m_prepareWave3 = false;
+
+            EnumsAndVars::enemiesMaxActiveCountOnGround = 0;
+
+            int skeletonCount = 0;
+            for(auto& enemy : m_allAnimatedEnemies)
+            {
+                enemy->isCanBeSpawned = false;
+
+                if(skeletonCount < 600 && enemy->unitType == UnitType::ENEMY_1)
+                {
+                    enemy->isCanBeSpawned = true;
+                    ++skeletonCount;
+                    ++EnumsAndVars::enemiesMaxActiveCountOnGround;
+                }
+            }
+
+            BR_INFO("Prepare wave 3. Max enemies: %d", EnumsAndVars::enemiesMaxActiveCountOnGround);
+        }
+
+        //int spawnedCount = 0;
+        // Spawn enemies.
+        if(!m_pointsToSpawnEnemies.empty())
+        {
+            for(const auto& enemy : m_allAnimatedEnemies)
+            {
+                if(BaseEnemy::getActiveCount() >= EnumsAndVars::enemiesMaxActiveCountOnGround)
+                    break;
+
+                // Enemy already spawned or can not be spawned.
+                if(enemy->getIsEnabledUpdate() || !enemy->isCanBeSpawned)
+                    continue;
+
+                //++spawnedCount;
+                enemy->enableEnemy();
+                enemy->disableDraw();
+
+                const glm::ivec2 spawnPoint2D = m_pointsToSpawnEnemies[Beryll::RandomGenerator::getInt(m_pointsToSpawnEnemies.size() - 1)];
+
+                enemy->setPathArray(m_pathFinderEnemies.findPath(spawnPoint2D, m_playerClosestAllowedPos, 6), 1);
+
+                enemy->setOrigin(enemy->getStartPointMoveFrom());
+            }
+        }
+
+        //BR_INFO("spawnedCount: %d", spawnedCount);
+        //BR_INFO("BaseEnemy::getActiveCount(): %d", BaseEnemy::getActiveCount());
+    }
+
+    void PlayStateSceneLayer::killEnemies()
+    {
+        for(const auto& bullet : m_playerBullets)
+        {
+            if(bullet->getIsEnabledUpdate())
+            {
+                int collisionID = Beryll::Physics::getAnyCollisionForID(bullet->getID());
+                if(collisionID > 0)
+                {
+                    for(const auto& enemy : m_allAnimatedEnemies)
+                    {
+                        if(enemy->getIsEnabledUpdate() && enemy->getID() == collisionID)
+                        {
+                            enemy->disableEnemy();
+                            Sounds::playSoundEffect(SoundType::BULLET_HIT);
+                            break;
+                        }
+                    }
+                }
+            }
         }
     }
 }
