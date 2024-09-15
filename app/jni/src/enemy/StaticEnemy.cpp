@@ -41,10 +41,10 @@ namespace BubbleShooter3D
         {
             //BR_INFO("%s", "StaticEnemy DelayBeforeFirstAttack");
             unitState = UnitState::STAND_AIMING;
-            setCurrentAnimationByIndex(EnumsAndVars::AnimationIndexes::stand, false, false, true);
-            rotateToPoint(playerOrigin, true);
+            m_obj->setCurrentAnimationByIndex(EnumsAndVars::AnimationIndexes::stand, false, false, true);
+            m_obj->rotateToPoint(playerOrigin, true);
         }
-        else if(glm::distance(m_origin, playerOrigin) < attackDistance)
+        else if(glm::distance(m_obj->getOrigin(), playerOrigin) < attackDistance)
         {
             //BR_INFO("%s", "StaticEnemy IN_ATTACK_RADIUS");
             unitState = UnitState::IN_ATTACK_RADIUS;
@@ -53,7 +53,7 @@ namespace BubbleShooter3D
             {
                 //BR_INFO("%s", "StaticEnemy if(getIsTimeToAttack())");
                 // Check if enemy see player.
-                Beryll::RayClosestHit rayEnv = Beryll::Physics::castRayClosestHit(m_origin,
+                Beryll::RayClosestHit rayEnv = Beryll::Physics::castRayClosestHit(m_obj->getOrigin(),
                                                                                   playerOrigin,
                                                                                   Beryll::CollisionGroups::RAY_FOR_ENVIRONMENT,
                                                                                   Beryll::CollisionGroups::STATIC_ENVIRONMENT);
@@ -82,7 +82,7 @@ namespace BubbleShooter3D
         else
         {
             unitState = UnitState::STAND_AIMING;
-            setCurrentAnimationByIndex(EnumsAndVars::AnimationIndexes::stand, false, false, true);
+            m_obj->setCurrentAnimationByIndex(EnumsAndVars::AnimationIndexes::stand, false, false, true);
             m_prepareToFirstAttack = true;
         }
     }
@@ -102,7 +102,7 @@ namespace BubbleShooter3D
     void StaticEnemy::freeStaticPosition()
     {
         auto iter = std::find_if(StaticEnemy::staticPositions.begin(), StaticEnemy::staticPositions.end(),
-                                 [this](StaticPosition& posAndRange) { return posAndRange.position == this->getOrigin(); });
+                                 [this](StaticPosition& posAndRange) { return posAndRange.position == this->m_obj->getOrigin(); });
         if(iter != StaticEnemy::staticPositions.end())
         {
             iter->isFreePosition = true;

@@ -36,10 +36,10 @@ namespace BubbleShooter3D
         {
             //BR_INFO("%s", "MovableEnemy DelayBeforeFirstAttack");
             unitState = UnitState::STAND_AIMING;
-            setCurrentAnimationByIndex(EnumsAndVars::AnimationIndexes::stand, false, false, true);
-            rotateToPoint(playerOrigin, true);
+            m_obj->setCurrentAnimationByIndex(EnumsAndVars::AnimationIndexes::stand, false, false, true);
+            m_obj->rotateToPoint(playerOrigin, true);
         }
-        else if(glm::distance(m_origin, playerOrigin) > attackDistance)
+        else if(glm::distance(m_obj->getOrigin(), playerOrigin) > attackDistance)
         {
             //BR_INFO("%s", "MovableEnemy move because distance");
             move();
@@ -53,7 +53,7 @@ namespace BubbleShooter3D
             {
                 //BR_INFO("%s", "MovableEnemy if(getIsTimeToAttack())");
                 // Check if enemy see player.
-                Beryll::RayClosestHit rayEnv = Beryll::Physics::castRayClosestHit(m_origin,
+                Beryll::RayClosestHit rayEnv = Beryll::Physics::castRayClosestHit(m_obj->getOrigin(),
                                                                                   playerOrigin,
                                                                                   Beryll::CollisionGroups::RAY_FOR_ENVIRONMENT,
                                                                                   Beryll::CollisionGroups::STATIC_ENVIRONMENT);
@@ -87,11 +87,11 @@ namespace BubbleShooter3D
 
         m_prepareToFirstAttack = true;
 
-        setCurrentAnimationByIndex(EnumsAndVars::AnimationIndexes::run, false, false);
+        m_obj->setCurrentAnimationByIndex(EnumsAndVars::AnimationIndexes::run, false, false, true);
 
-        getController().moveToPosition(m_currentPointToMove3DFloats, true, true);
+        m_obj->getController().moveToPosition(m_currentPointToMove3DFloats, true, true);
 
-        if(!getController().getIsMoving())
+        if(!m_obj->getController().getIsMoving())
         {
             //BR_INFO("%s", "MovableEnemy NOT   moving");
 
@@ -103,7 +103,7 @@ namespace BubbleShooter3D
                 m_currentPointToMove2DIntegers = m_pathArray[m_pathArrayIndexToMove];
                 float currentY = m_currentPointToMove3DFloats.y;
                 m_currentPointToMove3DFloats = glm::vec3(m_currentPointToMove2DIntegers.x,
-                                                         getFromOriginToBottom(),
+                                                         m_obj->getFromOriginToBottom(),
                                                          m_currentPointToMove2DIntegers.y);
 
                 if(castRayToFindYPos)
@@ -119,7 +119,7 @@ namespace BubbleShooter3D
 
                     if(rayHit)
                     {
-                        m_currentPointToMove3DFloats.y = rayHit.hitPoint.y + getFromOriginToBottom();
+                        m_currentPointToMove3DFloats.y = rayHit.hitPoint.y + m_obj->getFromOriginToBottom();
                     }
                 }
             }
@@ -146,10 +146,10 @@ namespace BubbleShooter3D
 
         m_currentPointToMove2DIntegers = m_pathArray[m_pathArrayIndexToMove];
         m_currentPointToMove3DFloats = glm::vec3(m_currentPointToMove2DIntegers.x,
-                                                 getFromOriginToBottom(),
+                                                 m_obj->getFromOriginToBottom(),
                                                  m_currentPointToMove2DIntegers.y);
         m_startPointMoveFrom = glm::vec3(m_pathArray[0].x,
-                                         getFromOriginToBottom(),
+                                         m_obj->getFromOriginToBottom(),
                                          m_pathArray[0].y);
 
         if(castRayToFindYPos)
@@ -165,8 +165,8 @@ namespace BubbleShooter3D
 
             if(rayHit)
             {
-                m_currentPointToMove3DFloats.y = rayHit.hitPoint.y + getFromOriginToBottom();
-                m_startPointMoveFrom.y = rayHit.hitPoint.y + getFromOriginToBottom();
+                m_currentPointToMove3DFloats.y = rayHit.hitPoint.y + m_obj->getFromOriginToBottom();
+                m_startPointMoveFrom.y = rayHit.hitPoint.y + m_obj->getFromOriginToBottom();
             }
 
             if(m_pathArrayIndexToMove > 0)
@@ -183,7 +183,7 @@ namespace BubbleShooter3D
 
                 if(rayHit2)
                 {
-                    m_startPointMoveFrom.y = rayHit2.hitPoint.y + getFromOriginToBottom();
+                    m_startPointMoveFrom.y = rayHit2.hitPoint.y + m_obj->getFromOriginToBottom();
                 }
             }
         }

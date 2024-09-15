@@ -3,8 +3,9 @@
 #include "EngineHeaders.h"
 #include "PlayStateGUILayer.h"
 #include "player/Player.h"
+#include "player/PlayerBullet.h"
 #include "player/PlayerBulletAirTrajectory.h"
-#include "enemy/BaseEnemy.h"
+#include "enemy/MovableEnemy.h"
 #include "pathfinding/AStar.h"
 
 namespace BubbleShooter3D
@@ -35,8 +36,8 @@ namespace BubbleShooter3D
         std::shared_ptr<PlayStateGUILayer> m_gui;
 
         std::shared_ptr<Player> m_player;
-        std::vector<std::shared_ptr<Beryll::BaseSimpleObject>> m_playerBullets;
-        std::vector<std::shared_ptr<BaseEnemy>> m_allAnimatedEnemies;
+        std::vector<PlayerBullet> m_playerBullets;
+        std::vector<MovableEnemy> m_movableEnemies;
         std::vector<std::shared_ptr<Beryll::SceneObject>> m_animatedOrDynamicObjects;
         std::vector<std::shared_ptr<Beryll::BaseSimpleObject>> m_staticEnv;
         std::vector<std::shared_ptr<Beryll::BaseSimpleObject>> m_objWithNormalMap;

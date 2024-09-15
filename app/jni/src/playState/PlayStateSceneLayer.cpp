@@ -10,7 +10,7 @@ namespace BubbleShooter3D
         m_ID = Beryll::LayerID::PLAY_SCENE;
 
         m_playerBullets.reserve(200);
-        m_allAnimatedEnemies.reserve(700);
+        m_movableEnemies.reserve(700);
         m_animatedOrDynamicObjects.reserve(200);
         m_staticEnv.reserve(10);
         m_simpleObjForShadowMap.reserve(10);
@@ -21,13 +21,13 @@ namespace BubbleShooter3D
         loadShadersAndLight();
 
         m_pathFinderEnemies = AStar(m_mapMinX, m_mapMaxX, m_mapMinZ, m_mapMaxZ, 20);
-        std::vector<glm::vec3> walls = BeryllUtils::Common::loadMeshVerticesToVector("models3D/map1/PathEnemiesWalls.fbx");
-        for(const auto& wall : walls)
-        {
-            m_pathFinderEnemies.addWallPosition({(int)std::roundf(wall.x), (int)std::roundf(wall.z)});
-        }
-
-        BR_INFO("Map1 pathfinder walls: %d", walls.size());
+//        std::vector<glm::vec3> walls = BeryllUtils::Common::loadMeshVerticesToVector("models3D/map1/PathEnemiesWalls.fbx");
+//        for(const auto& wall : walls)
+//        {
+//            m_pathFinderEnemies.addWallPosition({(int)std::roundf(wall.x), (int)std::roundf(wall.z)});
+//        }
+//
+//        BR_INFO("Map1 pathfinder walls: %d", walls.size());
 
         std::vector<glm::vec3> allowedPoints = BeryllUtils::Common::loadMeshVerticesToVector("models3D/map1/PathEnemiesAllowedPositions.fbx");
         m_pathAllowedPositionsXZ.reserve(allowedPoints.size());
@@ -66,17 +66,15 @@ namespace BubbleShooter3D
         handleControls();
         checkMapBorders();
         updatePathfindingAndSpawnEnemies();
-        for(const auto& enemy : m_allAnimatedEnemies)
+        for(auto& enemy : m_movableEnemies)
         {
-            if (enemy->getIsEnabledUpdate())
-                enemy->update(m_player->getOrigin());
+            if(enemy.getIsEnabled())
+                enemy.update(m_player->getOrigin());
         }
     }
 
     void PlayStateSceneLayer::updateAfterPhysics()
     {
-        const float distanceToEnableObjects = m_cameraDistance * 1.1f;
-
         for(const std::shared_ptr<Beryll::SceneObject>& so : m_animatedOrDynamicObjects)
         {
             if(so->getIsEnabledUpdate())
@@ -85,8 +83,7 @@ namespace BubbleShooter3D
 
                 if(so->getSceneObjectGroup() == Beryll::SceneObjectGroups::ENEMY)
                 {
-                    if( //glm::distance(m_player->getOrigin(), so->getOrigin()) < distanceToEnableObjects ||
-                       Beryll::Camera::getIsSeeObject(so->getOrigin()))
+                    if(Beryll::Camera::getIsSeeObject(so->getOrigin()))
                         so->enableDraw();
                     else
                         so->disableDraw();
@@ -133,13 +130,13 @@ namespace BubbleShooter3D
         m_animatedObjSunLight->set3Float("sunLightDir", m_sunLightDir);
         m_animatedObjSunLight->set1Float("ambientLight", 0.7f);
 
-        for(const auto& animObj : m_allAnimatedEnemies)
+        for(auto& animObj : m_movableEnemies)
         {
-            if(animObj->getIsEnabledDraw())
+            if(animObj.getObj()->getIsEnabledDraw())
             {
-                modelMatrix = animObj->getModelMatrix();
+                modelMatrix = animObj.getObj()->getModelMatrix();
                 m_animatedObjSunLight->setMatrix3x3Float("normalMatrix", glm::mat3(modelMatrix));
-                Beryll::Renderer::drawObject(animObj, modelMatrix, m_animatedObjSunLight);
+                Beryll::Renderer::drawObject(animObj.getObj(), modelMatrix, m_animatedObjSunLight);
             }
         }
 
@@ -155,15 +152,15 @@ namespace BubbleShooter3D
         m_simpleObjSunLightShadows->setMatrix3x3Float("normalMatrix", glm::mat3(modelMatrix));
         Beryll::Renderer::drawObject(m_player, modelMatrix, m_simpleObjSunLightShadows);
 
-        for(const auto& bullet : m_playerBullets)
+        for(auto& bullet : m_playerBullets)
         {
-            if(bullet->getIsEnabledDraw())
+            if(bullet.getObj()->getIsEnabledDraw())
             {
-                modelMatrix = bullet->getModelMatrix();
+                modelMatrix = bullet.getObj()->getModelMatrix();
                 m_simpleObjSunLightShadows->setMatrix4x4Float("MVPLightMatrix", m_sunLightVPMatrix * modelMatrix);
                 m_simpleObjSunLightShadows->setMatrix4x4Float("modelMatrix", modelMatrix);
                 m_simpleObjSunLightShadows->setMatrix3x3Float("normalMatrix", glm::mat3(modelMatrix));
-                Beryll::Renderer::drawObject(bullet, modelMatrix, m_simpleObjSunLightShadows);
+                Beryll::Renderer::drawObject(bullet.getObj(), modelMatrix, m_simpleObjSunLightShadows);
             }
         }
 
@@ -213,7 +210,7 @@ namespace BubbleShooter3D
                                             Beryll::CollisionGroups::STATIC_ENVIRONMENT | Beryll::CollisionGroups::JUMPPAD,
                                             Beryll::SceneObjectGroups::PLAYER);
 
-        m_player->setOrigin(glm::vec3(350.0f, 5.0f, -150.0f));
+        m_player->setOrigin(glm::vec3(350.0f, m_player->getFromOriginToBottom(), -150.0f));
         m_player->getController().moveSpeed = 50.0f;
         m_player->setGravity(glm::vec3(0.0f, -70.0f, 0.0f));
         m_player->setAngularFactor(glm::vec3(0.0f));
@@ -224,20 +221,16 @@ namespace BubbleShooter3D
 
         for(int i = 0; i < 40; ++i)
         {
-            const auto bullet = std::make_shared<Beryll::SimpleCollidingObject>("models3D/player/PlayerBullet.fbx",
-                                                                                EnumsAndVars::bulletMass,
-                                                                                true,
-                                                                                Beryll::CollisionFlags::DYNAMIC,
-                                                                                Beryll::CollisionGroups::PLAYER_BULLET,
-                                                                                Beryll::CollisionGroups::STATIC_ENVIRONMENT | Beryll::CollisionGroups::MOVABLE_ENEMY,
-                                                                                Beryll::SceneObjectGroups::BULLET);
+            PlayerBullet bullet("models3D/player/PlayerBullet.fbx",
+                                EnumsAndVars::bulletMass,
+                                true,
+                                Beryll::CollisionFlags::DYNAMIC,
+                                Beryll::CollisionGroups::PLAYER_BULLET,
+                                Beryll::CollisionGroups::STATIC_ENVIRONMENT | Beryll::CollisionGroups::MOVABLE_ENEMY,
+                                Beryll::SceneObjectGroups::BULLET);
 
-            bullet->disableUpdate();
-            bullet->disableCollisionMesh();
-            bullet->disableDraw();
-
+            m_animatedOrDynamicObjects.push_back(bullet.getObj());
             m_playerBullets.push_back(bullet);
-            m_animatedOrDynamicObjects.push_back(bullet);
         }
     }
 
@@ -296,38 +289,38 @@ namespace BubbleShooter3D
 
     void PlayStateSceneLayer::loadEnemies()
     {
-        for(int i = 0; i < 600; ++i)
+        for(int i = 0; i < 1000; ++i)
         {
-            auto skeleton = std::make_shared<MovableEnemy>("models3D/enemies/Skeleton.fbx",
-                                                           0.0f,
-                                                           false,
-                                                           Beryll::CollisionFlags::STATIC,
-                                                           Beryll::CollisionGroups::MOVABLE_ENEMY,
-                                                           Beryll::CollisionGroups::PLAYER_BULLET,
-                                                           Beryll::SceneObjectGroups::ENEMY);
+            MovableEnemy skeleton("models3D/enemies/Skeleton.fbx",
+                                  0.0f,
+                                  false,
+                                  Beryll::CollisionFlags::STATIC,
+                                  Beryll::CollisionGroups::MOVABLE_ENEMY,
+                                  Beryll::CollisionGroups::PLAYER_BULLET,
+                                  Beryll::SceneObjectGroups::ENEMY);
 
-            skeleton->setCurrentAnimationByIndex(EnumsAndVars::AnimationIndexes::run, false, false, true);
-            skeleton->setDefaultAnimationByIndex(EnumsAndVars::AnimationIndexes::stand);
-            skeleton->unitType = UnitType::ENEMY_1;
-            skeleton->attackType = AttackType::RANGE_DAMAGE_ONE;
-            skeleton->attackSound = SoundType::NONE;
-            skeleton->attackHitSound = SoundType::NONE;
-            skeleton->attackParticlesColor = glm::vec3{0.4258f, 0.84f, 0.68f};
-            skeleton->attackParticlesSize = 0.3f;
-            skeleton->dieSound = SoundType::NONE;
-            skeleton->castRayToFindYPos = true;
+            skeleton.getObj()->setCurrentAnimationByIndex(EnumsAndVars::AnimationIndexes::run, false, false, true);
+            skeleton.getObj()->setDefaultAnimationByIndex(EnumsAndVars::AnimationIndexes::stand);
+            skeleton.unitType = UnitType::ENEMY_1;
+            skeleton.attackType = AttackType::RANGE_DAMAGE_ONE;
+            skeleton.attackSound = SoundType::NONE;
+            skeleton.attackHitSound = SoundType::NONE;
+            skeleton.attackParticlesColor = glm::vec3{0.4258f, 0.84f, 0.68f};
+            skeleton.attackParticlesSize = 0.3f;
+            skeleton.dieSound = SoundType::NONE;
+            skeleton.castRayToFindYPos = true;
 
-            skeleton->damage = 1.5f;
-            skeleton->attackDistance = 80.0f + Beryll::RandomGenerator::getFloat() * 120.0f;
-            skeleton->timeBetweenAttacks = 2.0f + Beryll::RandomGenerator::getFloat() * 0.5f;
+            skeleton.damage = 1.5f;
+            skeleton.attackDistance = 80.0f + Beryll::RandomGenerator::getFloat() * 120.0f;
+            skeleton.timeBetweenAttacks = 2.0f + Beryll::RandomGenerator::getFloat() * 0.5f;
 
-            skeleton->garbageAmountToDie = 10;
-            skeleton->reducePlayerSpeedWhenDie = 1.0f;
-            skeleton->experienceWhenDie = 25;
-            skeleton->getController().moveSpeed = 55.0f;
+            skeleton.garbageAmountToDie = 10;
+            skeleton.reducePlayerSpeedWhenDie = 1.0f;
+            skeleton.experienceWhenDie = 25;
+            skeleton.getObj()->getController().moveSpeed = 55.0f;
 
-            m_animatedOrDynamicObjects.push_back(skeleton);
-            m_allAnimatedEnemies.push_back(skeleton);
+            m_animatedOrDynamicObjects.push_back(skeleton.getObj());
+            m_movableEnemies.push_back(skeleton);
             //m_animatedObjForShadowMap.push_back(skeleton);
         }
     }
@@ -472,12 +465,7 @@ namespace BubbleShooter3D
             if(m_currentBulletIndex >= m_playerBullets.size())
                 m_currentBulletIndex = 0;
 
-            m_playerBullets[m_currentBulletIndex]->enableCollisionMesh();
-            m_playerBullets[m_currentBulletIndex]->enableUpdate();
-            m_playerBullets[m_currentBulletIndex]->enableDraw();
-
-            m_playerBullets[m_currentBulletIndex]->setOrigin(m_bulletStartPosition, true);
-            m_playerBullets[m_currentBulletIndex]->applyCentralImpulse(m_bulletImpulseVector);
+            m_playerBullets[m_currentBulletIndex].shoot(m_bulletStartPosition, m_bulletImpulseVector);
 
             ++m_currentBulletIndex;
             EnumsAndVars::shotTimeSec = EnumsAndVars::playTimeSec;
@@ -572,22 +560,22 @@ namespace BubbleShooter3D
         {
             int enemiesUpdated = 0;
             int& i = EnumsAndVars::enemiesCurrentPathfindingIndex;
-            for( ; i < m_allAnimatedEnemies.size(); ++i)
+            for( ; i < m_movableEnemies.size(); ++i)
             {
                 if(enemiesUpdated >= EnumsAndVars::enemiesMaxPathfindingInOneFrame)
                     break;
 
-                if(m_allAnimatedEnemies[i]->getIsEnabledUpdate() && m_allAnimatedEnemies[i]->getIsCanMove())
+                if(m_movableEnemies[i].getIsEnabled() && m_movableEnemies[i].getIsCanMove())
                 {
-                    m_allAnimatedEnemies[i]->setPathArray(m_pathFinderEnemies.findPath(m_allAnimatedEnemies[i]->getCurrentPointToMove2DInt(), m_playerClosestAllowedPos, 7), 0);
+                    m_movableEnemies[i].setPathArray(m_pathFinderEnemies.findPath(m_movableEnemies[i].getCurrentPointToMove2DInt(), m_playerClosestAllowedPos, 7), 0);
 
-                    m_pathFinderEnemies.addBlockedPosition(m_allAnimatedEnemies[i]->getCurrentPointToMove2DInt());
+                    m_pathFinderEnemies.addBlockedPosition(m_movableEnemies[i].getCurrentPointToMove2DInt());
 
                     ++enemiesUpdated;
                 }
             }
 
-            if(EnumsAndVars::enemiesCurrentPathfindingIndex >= m_allAnimatedEnemies.size())
+            if(EnumsAndVars::enemiesCurrentPathfindingIndex >= m_movableEnemies.size())
             {
                 // All enemies were updated.
                 //BR_INFO("Path for all enemies updated. Last index: %d", EnumsAndVariables::enemiesCurrentPathfindingIndex);
@@ -607,13 +595,13 @@ namespace BubbleShooter3D
             EnumsAndVars::enemiesMaxActiveCountOnGround = 0;
 
             int skeletonCount = 0;
-            for(auto& enemy : m_allAnimatedEnemies)
+            for(auto& enemy : m_movableEnemies)
             {
-                enemy->isCanBeSpawned = false;
+                enemy.isCanBeSpawned = false;
 
-                if(skeletonCount < 200 && enemy->unitType == UnitType::ENEMY_1)
+                if(skeletonCount < 300 && enemy.unitType == UnitType::ENEMY_1)
                 {
-                    enemy->isCanBeSpawned = true;
+                    enemy.isCanBeSpawned = true;
                     ++skeletonCount;
                     ++EnumsAndVars::enemiesMaxActiveCountOnGround;
                 }
@@ -628,13 +616,13 @@ namespace BubbleShooter3D
             EnumsAndVars::enemiesMaxActiveCountOnGround = 0;
 
             int skeletonCount = 0;
-            for(auto& enemy : m_allAnimatedEnemies)
+            for(auto& enemy : m_movableEnemies)
             {
-                enemy->isCanBeSpawned = false;
+                enemy.isCanBeSpawned = false;
 
-                if(skeletonCount < 400 && enemy->unitType == UnitType::ENEMY_1)
+                if(skeletonCount < 600 && enemy.unitType == UnitType::ENEMY_1)
                 {
-                    enemy->isCanBeSpawned = true;
+                    enemy.isCanBeSpawned = true;
                     ++skeletonCount;
                     ++EnumsAndVars::enemiesMaxActiveCountOnGround;
                 }
@@ -649,13 +637,13 @@ namespace BubbleShooter3D
             EnumsAndVars::enemiesMaxActiveCountOnGround = 0;
 
             int skeletonCount = 0;
-            for(auto& enemy : m_allAnimatedEnemies)
+            for(auto& enemy : m_movableEnemies)
             {
-                enemy->isCanBeSpawned = false;
+                enemy.isCanBeSpawned = false;
 
-                if(skeletonCount < 600 && enemy->unitType == UnitType::ENEMY_1)
+                if(skeletonCount < 1000 && enemy.unitType == UnitType::ENEMY_1)
                 {
-                    enemy->isCanBeSpawned = true;
+                    enemy.isCanBeSpawned = true;
                     ++skeletonCount;
                     ++EnumsAndVars::enemiesMaxActiveCountOnGround;
                 }
@@ -668,24 +656,24 @@ namespace BubbleShooter3D
         // Spawn enemies.
         if(!m_pointsToSpawnEnemies.empty())
         {
-            for(const auto& enemy : m_allAnimatedEnemies)
+            for(auto& enemy : m_movableEnemies)
             {
                 if(BaseEnemy::getActiveCount() >= EnumsAndVars::enemiesMaxActiveCountOnGround)
                     break;
 
                 // Enemy already spawned or can not be spawned.
-                if(enemy->getIsEnabledUpdate() || !enemy->isCanBeSpawned)
+                if(enemy.getIsEnabled() || !enemy.isCanBeSpawned)
                     continue;
 
                 //++spawnedCount;
-                enemy->enableEnemy();
-                enemy->disableDraw();
+                enemy.enableEnemy();
+                enemy.getObj()->disableDraw();
 
                 const glm::ivec2 spawnPoint2D = m_pointsToSpawnEnemies[Beryll::RandomGenerator::getInt(m_pointsToSpawnEnemies.size() - 1)];
 
-                enemy->setPathArray(m_pathFinderEnemies.findPath(spawnPoint2D, m_playerClosestAllowedPos, 6), 1);
+                enemy.setPathArray(m_pathFinderEnemies.findPath(spawnPoint2D, m_playerClosestAllowedPos, 6), 1);
 
-                enemy->setOrigin(enemy->getStartPointMoveFrom());
+                enemy.getObj()->setOrigin(enemy.getStartPointMoveFrom());
             }
         }
 
@@ -695,18 +683,18 @@ namespace BubbleShooter3D
 
     void PlayStateSceneLayer::killEnemies()
     {
-        for(const auto& bullet : m_playerBullets)
+        for(auto& bullet : m_playerBullets)
         {
-            if(bullet->getIsEnabledUpdate())
+            if(bullet.getIsEnabled())
             {
-                int collisionID = Beryll::Physics::getAnyCollisionForID(bullet->getID());
+                int collisionID = Beryll::Physics::getAnyCollisionForID(bullet.getObjID());
                 if(collisionID > 0)
                 {
-                    for(const auto& enemy : m_allAnimatedEnemies)
+                    for(auto& enemy : m_movableEnemies)
                     {
-                        if(enemy->getIsEnabledUpdate() && enemy->getID() == collisionID)
+                        if(enemy.getIsEnabled() && enemy.getObjID() == collisionID)
                         {
-                            enemy->disableEnemy();
+                            enemy.disableEnemy();
                             Sounds::playSoundEffect(SoundType::BULLET_HIT);
                             break;
                         }

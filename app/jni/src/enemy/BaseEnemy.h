@@ -26,7 +26,7 @@ namespace BubbleShooter3D
         MAGNETIZE_GARBAGE
     };
 
-    class BaseEnemy : public Beryll::AnimatedCollidingCharacter
+    class BaseEnemy
     {
     public:
         BaseEnemy() = delete;
@@ -37,13 +37,16 @@ namespace BubbleShooter3D
                   Beryll::CollisionGroups collGroup,
                   Beryll::CollisionGroups collMask,
                   Beryll::SceneObjectGroups sceneGroup);
-        ~BaseEnemy() override;
+        virtual ~BaseEnemy();
         
         virtual void update(const glm::vec3& playerOrigin) = 0;
         virtual void die() = 0;
         void attack(const glm::vec3& playerOrigin);
         virtual void freeStaticPosition() = 0; // Implement for StaticEnemy.
         virtual void setPathArray(std::vector<glm::ivec2> pathArray, const int indexToMove) = 0; // Implement for MovableEnemy.
+
+        std::shared_ptr<Beryll::AnimatedCollidingCharacter> getObj() { return m_obj; }
+        int getObjID() { return m_objID; }
 
         void enableEnemy();
         void disableEnemy();
@@ -80,6 +83,9 @@ namespace BubbleShooter3D
 
     protected:
         virtual void move() = 0;
+
+        std::shared_ptr<Beryll::AnimatedCollidingCharacter> m_obj;
+        int m_objID = 0;
 
         static int m_activeEnemiesCount;
         bool m_isEnabled = false;

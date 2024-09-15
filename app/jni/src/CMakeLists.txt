@@ -15,6 +15,7 @@ add_library(main SHARED main.cpp
                         playState/PlayStateGUILayer.cpp
                         playState/PlayStateSceneLayer.cpp
                         player/Player.cpp
+                        player/PlayerBullet.cpp
                         player/PlayerBulletAirTrajectory.cpp
                         enemy/BaseEnemy.cpp
                         enemy/MovableEnemy.cpp

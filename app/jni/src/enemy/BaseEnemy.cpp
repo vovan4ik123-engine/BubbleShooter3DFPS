@@ -11,14 +11,17 @@ namespace BubbleShooter3D
                          Beryll::CollisionGroups collGroup,
                          Beryll::CollisionGroups collMask,
                          Beryll::SceneObjectGroups sceneGroup)
-                         : AnimatedCollidingCharacter(filePath,
-                                                      collisionMassKg,
-                                                      wantCollisionCallBack,
-                                                      collFlag,
-                                                      collGroup,
-                                                      collMask,
-                                                      sceneGroup)
     {
+        m_obj = std::make_shared<Beryll::AnimatedCollidingCharacter>(filePath,
+                                                                     collisionMassKg,
+                                                                     wantCollisionCallBack,
+                                                                     collFlag,
+                                                                     collGroup,
+                                                                     collMask,
+                                                                     sceneGroup);
+
+        m_objID = m_obj->getID();
+
         disableEnemy();
     }
 
@@ -30,9 +33,9 @@ namespace BubbleShooter3D
 
     void BaseEnemy::enableEnemy()
     {
-        enableDraw();
-        enableUpdate();
-        enableCollisionMesh();
+        m_obj->enableDraw();
+        m_obj->enableUpdate();
+        m_obj->enableCollisionMesh();
 
         ++BaseEnemy::m_activeEnemiesCount;
         m_isEnabled = true;
@@ -40,9 +43,9 @@ namespace BubbleShooter3D
 
     void BaseEnemy::disableEnemy()
     {
-        disableDraw();
-        disableUpdate();
-        disableCollisionMesh();
+        m_obj->disableDraw();
+        m_obj->disableUpdate();
+        m_obj->disableCollisionMesh();
 
         if(BaseEnemy::m_activeEnemiesCount > 0)
             --BaseEnemy::m_activeEnemiesCount;
@@ -56,8 +59,8 @@ namespace BubbleShooter3D
     void BaseEnemy::attack(const glm::vec3& playerOrigin)
     {
         //BR_INFO("%s", "BaseEnemy::attack()");
-        rotateToPoint(playerOrigin, true);
-        setCurrentAnimationByIndex(EnumsAndVars::AnimationIndexes::attack, true, true);
+        m_obj->rotateToPoint(playerOrigin, true);
+        m_obj->setCurrentAnimationByIndex(EnumsAndVars::AnimationIndexes::attack, true, true);
         m_lastAttackTime = EnumsAndVars::playTimeSec;
         unitState = UnitState::ATTACKING;
 
