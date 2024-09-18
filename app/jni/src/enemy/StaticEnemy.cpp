@@ -32,6 +32,9 @@ namespace BubbleShooter3D
 
     void StaticEnemy::update(const glm::vec3& playerOrigin)
     {
+        if(!m_isEnabled)
+            return;
+
         if(getIsAttacking())
         {
             //BR_INFO("%s", "StaticEnemy is attacking");

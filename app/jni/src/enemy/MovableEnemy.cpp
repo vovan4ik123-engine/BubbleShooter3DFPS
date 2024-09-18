@@ -27,6 +27,9 @@ namespace BubbleShooter3D
 
     void MovableEnemy::update(const glm::vec3& playerOrigin)
     {
+        if(!m_isEnabled)
+            return;
+
         if(getIsAttacking())
         {
             //BR_INFO("%s", "MovableEnemy is attacking");

@@ -67,10 +67,7 @@ namespace BubbleShooter3D
         checkMapBorders();
         updatePathfindingAndSpawnEnemies();
         for(auto& enemy : m_movableEnemies)
-        {
-            if(enemy.getIsEnabled())
-                enemy.update(m_player->getOrigin());
-        }
+            enemy.update(m_player->getOrigin());
     }
 
     void PlayStateSceneLayer::updateAfterPhysics()
@@ -197,6 +194,7 @@ namespace BubbleShooter3D
                                             m_sunLightDir);
 
         m_skyBox->draw();
+        Beryll::TextOnScene::draw();
         //Beryll::ParticleSystem::draw();
     }
 
@@ -210,7 +208,7 @@ namespace BubbleShooter3D
                                             Beryll::CollisionGroups::STATIC_ENVIRONMENT | Beryll::CollisionGroups::JUMPPAD,
                                             Beryll::SceneObjectGroups::PLAYER);
 
-        m_player->setOrigin(glm::vec3(350.0f, m_player->getFromOriginToBottom(), -150.0f));
+        m_player->setOrigin(glm::vec3(-100.0f, m_player->getFromOriginToBottom(), 0.0f));
         m_player->getController().moveSpeed = 50.0f;
         m_player->setGravity(glm::vec3(0.0f, -70.0f, 0.0f));
         m_player->setAngularFactor(glm::vec3(0.0f));
@@ -289,7 +287,7 @@ namespace BubbleShooter3D
 
     void PlayStateSceneLayer::loadEnemies()
     {
-        for(int i = 0; i < 1000; ++i)
+        for(int i = 0; i < 500; ++i)
         {
             MovableEnemy skeleton("models3D/enemies/Skeleton.fbx",
                                   0.0f,
@@ -311,13 +309,13 @@ namespace BubbleShooter3D
             skeleton.castRayToFindYPos = true;
 
             skeleton.damage = 1.5f;
-            skeleton.attackDistance = 80.0f + Beryll::RandomGenerator::getFloat() * 120.0f;
+            skeleton.attackDistance = 25.0f;
             skeleton.timeBetweenAttacks = 2.0f + Beryll::RandomGenerator::getFloat() * 0.5f;
 
             skeleton.garbageAmountToDie = 10;
             skeleton.reducePlayerSpeedWhenDie = 1.0f;
             skeleton.experienceWhenDie = 25;
-            skeleton.getObj()->getController().moveSpeed = 55.0f;
+            skeleton.getObj()->getController().moveSpeed = 25.0f;
 
             m_animatedOrDynamicObjects.push_back(skeleton.getObj());
             m_movableEnemies.push_back(skeleton);
@@ -432,7 +430,7 @@ namespace BubbleShooter3D
         m_cameraOffset = glm::normalize(m_cameraOffset);
 
         m_cameraFront = m_player->getOrigin();
-        m_cameraFront.y += 15.0f;
+        m_cameraFront.y += 12.0f;
         Beryll::Camera::setCameraPos(m_cameraFront - m_cameraOffset * m_cameraDistance);
         Beryll::Camera::setCameraFrontPos(m_cameraFront);
         Beryll::Camera::updateCameraVectors();
@@ -452,7 +450,7 @@ namespace BubbleShooter3D
         m_bulletImpulseVector.y = glm::tan(m_bulletAngleRadians);
         m_bulletImpulseVector = glm::normalize(m_bulletImpulseVector);
         m_bulletImpulseVector *= EnumsAndVars::bulletMass;
-        m_bulletImpulseVector *= 600.0f; // m_gui->slider3->getValue();
+        m_bulletImpulseVector *= 500.0f; // m_gui->slider3->getValue();
 
         m_bulletStartPosition = m_player->getOrigin() + m_player->getFaceDirXZ() * 4.0f;
         m_bulletStartPosition.y += 4.0f;
@@ -541,9 +539,9 @@ namespace BubbleShooter3D
 
             BR_ASSERT((!m_pointsToSpawnEnemies.empty()), "%s", "m_allowedPointsToSpawnEnemies empty.");
         }
-            // In second frame:
-            // 1. Clear blocked positions.
-            // 2. Spawn enemies. In subclass.
+        // In second frame:
+        // 1. Clear blocked positions.
+        // 2. Spawn enemies.
         else if(m_pathFindingIteration == 1)
         {
             ++m_pathFindingIteration;
@@ -554,8 +552,8 @@ namespace BubbleShooter3D
             // 2.
             spawnEnemies();
         }
-            // In third frame:
-            // 1. Update paths for enemies.
+        // In third frame:
+        // 1. Update paths for enemies.
         else if(m_pathFindingIteration == 2)
         {
             int enemiesUpdated = 0;
@@ -568,9 +566,7 @@ namespace BubbleShooter3D
                 if(m_movableEnemies[i].getIsEnabled() && m_movableEnemies[i].getIsCanMove())
                 {
                     m_movableEnemies[i].setPathArray(m_pathFinderEnemies.findPath(m_movableEnemies[i].getCurrentPointToMove2DInt(), m_playerClosestAllowedPos, 7), 0);
-
                     m_pathFinderEnemies.addBlockedPosition(m_movableEnemies[i].getCurrentPointToMove2DInt());
-
                     ++enemiesUpdated;
                 }
             }
@@ -599,7 +595,7 @@ namespace BubbleShooter3D
             {
                 enemy.isCanBeSpawned = false;
 
-                if(skeletonCount < 300 && enemy.unitType == UnitType::ENEMY_1)
+                if(skeletonCount < 500 && enemy.unitType == UnitType::ENEMY_1)
                 {
                     enemy.isCanBeSpawned = true;
                     ++skeletonCount;
@@ -620,7 +616,7 @@ namespace BubbleShooter3D
             {
                 enemy.isCanBeSpawned = false;
 
-                if(skeletonCount < 600 && enemy.unitType == UnitType::ENEMY_1)
+                if(skeletonCount < 500 && enemy.unitType == UnitType::ENEMY_1)
                 {
                     enemy.isCanBeSpawned = true;
                     ++skeletonCount;
@@ -641,7 +637,7 @@ namespace BubbleShooter3D
             {
                 enemy.isCanBeSpawned = false;
 
-                if(skeletonCount < 1000 && enemy.unitType == UnitType::ENEMY_1)
+                if(skeletonCount < 500 && enemy.unitType == UnitType::ENEMY_1)
                 {
                     enemy.isCanBeSpawned = true;
                     ++skeletonCount;
@@ -650,6 +646,16 @@ namespace BubbleShooter3D
             }
 
             BR_INFO("Prepare wave 3. Max enemies: %d", EnumsAndVars::enemiesMaxActiveCountOnGround);
+        }
+
+        //int disabledCount = 0;
+        for(auto& enemy : m_movableEnemies)
+        {
+            if(enemy.getIsEnabled() && glm::distance(m_player->getOrigin(), enemy.getObj()->getOrigin()) > EnumsAndVars::enemiesDisableDistance)
+            {
+                enemy.disableEnemy();
+                //++disabledCount;
+            }
         }
 
         //int spawnedCount = 0;
@@ -662,22 +668,21 @@ namespace BubbleShooter3D
                     break;
 
                 // Enemy already spawned or can not be spawned.
-                if(enemy.getIsEnabled() || !enemy.isCanBeSpawned)
-                    continue;
+                if(!enemy.getIsEnabled() && enemy.isCanBeSpawned)
+                {
+                    //++spawnedCount;
+                    enemy.enableEnemy();
+                    enemy.getObj()->disableDraw();
 
-                //++spawnedCount;
-                enemy.enableEnemy();
-                enemy.getObj()->disableDraw();
-
-                const glm::ivec2 spawnPoint2D = m_pointsToSpawnEnemies[Beryll::RandomGenerator::getInt(m_pointsToSpawnEnemies.size() - 1)];
-
-                enemy.setPathArray(m_pathFinderEnemies.findPath(spawnPoint2D, m_playerClosestAllowedPos, 6), 1);
-
-                enemy.getObj()->setOrigin(enemy.getStartPointMoveFrom());
+                    const glm::ivec2 spawnPoint2D = m_pointsToSpawnEnemies[Beryll::RandomGenerator::getInt(m_pointsToSpawnEnemies.size() - 1)];
+                    enemy.setPathArray(m_pathFinderEnemies.findPath(spawnPoint2D, m_playerClosestAllowedPos, 6), 1);
+                    m_pathFinderEnemies.addBlockedPosition(enemy.getCurrentPointToMove2DInt());
+                    enemy.getObj()->setOrigin(enemy.getStartPointMoveFrom());
+                }
             }
         }
 
-        //BR_INFO("spawnedCount: %d", spawnedCount);
+        //BR_INFO("disabled: %d spawned: %d", disabledCount, spawnedCount);
         //BR_INFO("BaseEnemy::getActiveCount(): %d", BaseEnemy::getActiveCount());
     }
 
@@ -696,6 +701,18 @@ namespace BubbleShooter3D
                         {
                             enemy.disableEnemy();
                             Sounds::playSoundEffect(SoundType::BULLET_HIT);
+                            // Damage on screen.
+                            int number = Beryll::RandomGenerator::getInt(1000);
+                            float numberHeight = std::max(2.5f, glm::distance(Beryll::Camera::getCameraPos(), bullet.getObj()->getOrigin()) * 0.03f);
+                            if(Beryll::RandomGenerator::getFloat() < 0.1f)
+                            {
+                                number *= 10;
+                                numberHeight *= 3.0f;
+                            }
+                            Beryll::TextOnScene::addNumbersToShow(number, numberHeight, 1.0f, bullet.getObj()->getOrigin(),
+                                                                  glm::vec3{Beryll::RandomGenerator::getFloat() * 8.0f - 4.0f,
+                                                                            Beryll::RandomGenerator::getFloat() * 3.0f + 1.0f,
+                                                                            Beryll::RandomGenerator::getFloat() * 8.0f - 4.0f}, 100.0f);
                             break;
                         }
                     }
