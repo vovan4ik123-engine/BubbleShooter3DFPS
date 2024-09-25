@@ -42,6 +42,7 @@ namespace BubbleShooter3D
         std::vector<std::shared_ptr<Beryll::BaseSimpleObject>> m_staticEnv;
         std::vector<std::shared_ptr<Beryll::BaseSimpleObject>> m_objWithNormalMap;
         std::vector<std::shared_ptr<Beryll::BaseSimpleObject>> m_simpleObjForShadowMap;
+        //std::vector<std::shared_ptr<Beryll::BaseAnimatedObject>> m_animatedObjForShadowMap;
 
         // Shaders and light.
         std::shared_ptr<Beryll::Shader> m_simpleObjSunLightShadows;
@@ -60,7 +61,7 @@ namespace BubbleShooter3D
         float m_eyesLookAngleY = -15.0f; // Degrees.
         glm::vec3 m_cameraOffset{0.0f};
         glm::vec3 m_cameraFront{0.0f};
-        float m_cameraDistance = 70.0f;
+        float m_cameraDistance = 60.0f;
 
         std::unique_ptr<Beryll::SkyBox> m_skyBox;
 

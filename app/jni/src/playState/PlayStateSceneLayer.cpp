@@ -10,10 +10,11 @@ namespace BubbleShooter3D
         m_ID = Beryll::LayerID::PLAY_SCENE;
 
         m_playerBullets.reserve(200);
-        m_movableEnemies.reserve(700);
-        m_animatedOrDynamicObjects.reserve(200);
-        m_staticEnv.reserve(10);
-        m_simpleObjForShadowMap.reserve(10);
+        m_movableEnemies.reserve(800);
+        m_animatedOrDynamicObjects.reserve(1000);
+        //m_animatedObjForShadowMap.reserve(1000);
+        m_staticEnv.reserve(200);
+        m_simpleObjForShadowMap.reserve(200);
 
         loadPlayer();
         loadEnv();
@@ -45,6 +46,7 @@ namespace BubbleShooter3D
         Sounds::reset();
         EnumsAndVars::reset();
         Beryll::TimeStep::fixateTime();
+        Beryll::TextOnScene::setMaxCountToShow(15);
 
         //BR_INFO(" X:%f Y:%f Z:%f", .x, .y, .z);
         //BR_INFO("%s", "");
@@ -210,7 +212,7 @@ namespace BubbleShooter3D
 
         m_player->setOrigin(glm::vec3(-100.0f, m_player->getFromOriginToBottom(), 0.0f));
         m_player->getController().moveSpeed = 50.0f;
-        m_player->setGravity(glm::vec3(0.0f, -70.0f, 0.0f));
+        m_player->setGravity(EnumsAndVars::playerGravity);
         m_player->setAngularFactor(glm::vec3(0.0f));
         m_player->setLinearFactor(glm::vec3(1.0f, 1.0f, 1.0f));
 
@@ -309,17 +311,15 @@ namespace BubbleShooter3D
             skeleton.castRayToFindYPos = true;
 
             skeleton.damage = 1.5f;
-            skeleton.attackDistance = 25.0f;
+            skeleton.attackDistance = 30.0f;
             skeleton.timeBetweenAttacks = 2.0f + Beryll::RandomGenerator::getFloat() * 0.5f;
 
-            skeleton.garbageAmountToDie = 10;
-            skeleton.reducePlayerSpeedWhenDie = 1.0f;
             skeleton.experienceWhenDie = 25;
             skeleton.getObj()->getController().moveSpeed = 25.0f;
 
             m_animatedOrDynamicObjects.push_back(skeleton.getObj());
             m_movableEnemies.push_back(skeleton);
-            //m_animatedObjForShadowMap.push_back(skeleton);
+            //m_animatedObjForShadowMap.push_back(skeleton.getObj());
         }
     }
 
@@ -588,50 +588,42 @@ namespace BubbleShooter3D
         {
             m_prepareWave1 = false;
 
-            EnumsAndVars::enemiesMaxActiveCountOnGround = 0;
-
             int skeletonCount = 0;
             for(auto& enemy : m_movableEnemies)
             {
                 enemy.isCanBeSpawned = false;
 
-                if(skeletonCount < 500 && enemy.unitType == UnitType::ENEMY_1)
+                if(skeletonCount < 200 && enemy.unitType == UnitType::ENEMY_1)
                 {
                     enemy.isCanBeSpawned = true;
                     ++skeletonCount;
-                    ++EnumsAndVars::enemiesMaxActiveCountOnGround;
                 }
             }
 
-            BR_INFO("Prepare wave 1. Max enemies: %d", EnumsAndVars::enemiesMaxActiveCountOnGround);
+            BR_INFO("Prepare wave 1. Max enemies: %d", skeletonCount);
         }
         if(m_prepareWave2 && EnumsAndVars::playTimeSec > m_enemiesWave2Time)
         {
             m_prepareWave2 = false;
 
-            EnumsAndVars::enemiesMaxActiveCountOnGround = 0;
-
             int skeletonCount = 0;
             for(auto& enemy : m_movableEnemies)
             {
                 enemy.isCanBeSpawned = false;
 
-                if(skeletonCount < 500 && enemy.unitType == UnitType::ENEMY_1)
+                if(skeletonCount < 400 && enemy.unitType == UnitType::ENEMY_1)
                 {
                     enemy.isCanBeSpawned = true;
                     ++skeletonCount;
-                    ++EnumsAndVars::enemiesMaxActiveCountOnGround;
                 }
             }
 
-            BR_INFO("Prepare wave 2. Max enemies: %d", EnumsAndVars::enemiesMaxActiveCountOnGround);
+            BR_INFO("Prepare wave 2. Max enemies: %d", skeletonCount);
         }
         if(m_prepareWave3 && EnumsAndVars::playTimeSec > m_enemiesWave3Time)
         {
             m_prepareWave3 = false;
 
-            EnumsAndVars::enemiesMaxActiveCountOnGround = 0;
-
             int skeletonCount = 0;
             for(auto& enemy : m_movableEnemies)
             {
@@ -641,33 +633,26 @@ namespace BubbleShooter3D
                 {
                     enemy.isCanBeSpawned = true;
                     ++skeletonCount;
-                    ++EnumsAndVars::enemiesMaxActiveCountOnGround;
                 }
             }
 
-            BR_INFO("Prepare wave 3. Max enemies: %d", EnumsAndVars::enemiesMaxActiveCountOnGround);
+            BR_INFO("Prepare wave 3. Max enemies: %d", skeletonCount);
         }
 
-        //int disabledCount = 0;
-        for(auto& enemy : m_movableEnemies)
-        {
-            if(enemy.getIsEnabled() && glm::distance(m_player->getOrigin(), enemy.getObj()->getOrigin()) > EnumsAndVars::enemiesDisableDistance)
-            {
-                enemy.disableEnemy();
-                //++disabledCount;
-            }
-        }
-
-        //int spawnedCount = 0;
         // Spawn enemies.
+        //int spawnedCount = 0;
         if(!m_pointsToSpawnEnemies.empty())
         {
             for(auto& enemy : m_movableEnemies)
             {
-                if(BaseEnemy::getActiveCount() >= EnumsAndVars::enemiesMaxActiveCountOnGround)
-                    break;
+                if(enemy.getIsEnabled() && glm::distance(m_player->getOriginXZ(), enemy.getObj()->getOriginXZ()) > EnumsAndVars::enemiesDisableDistance)
+                {
+                    const glm::ivec2 spawnPoint2D = m_pointsToSpawnEnemies[Beryll::RandomGenerator::getInt(m_pointsToSpawnEnemies.size() - 1)];
+                    enemy.setPathArray(m_pathFinderEnemies.findPath(spawnPoint2D, m_playerClosestAllowedPos, 6), 1);
+                    m_pathFinderEnemies.addBlockedPosition(enemy.getCurrentPointToMove2DInt());
+                    enemy.getObj()->setOrigin(enemy.getStartPointMoveFrom());
+                }
 
-                // Enemy already spawned or can not be spawned.
                 if(!enemy.getIsEnabled() && enemy.isCanBeSpawned)
                 {
                     //++spawnedCount;
@@ -682,7 +667,7 @@ namespace BubbleShooter3D
             }
         }
 
-        //BR_INFO("disabled: %d spawned: %d", disabledCount, spawnedCount);
+        //BR_INFO("spawned: %d", spawnedCount);
         //BR_INFO("BaseEnemy::getActiveCount(): %d", BaseEnemy::getActiveCount());
     }
 
@@ -702,17 +687,17 @@ namespace BubbleShooter3D
                             enemy.disableEnemy();
                             Sounds::playSoundEffect(SoundType::BULLET_HIT);
                             // Damage on screen.
-                            int number = Beryll::RandomGenerator::getInt(1000);
+                            int number = Beryll::RandomGenerator::getInt(1000) + 1;
                             float numberHeight = std::max(2.5f, glm::distance(Beryll::Camera::getCameraPos(), bullet.getObj()->getOrigin()) * 0.03f);
                             if(Beryll::RandomGenerator::getFloat() < 0.1f)
                             {
                                 number *= 10;
                                 numberHeight *= 3.0f;
                             }
-                            Beryll::TextOnScene::addNumbersToShow(number, numberHeight, 1.0f, bullet.getObj()->getOrigin(),
+                            Beryll::TextOnScene::addNumbersToShow(number, numberHeight, 0.5f, bullet.getObj()->getOrigin(),
                                                                   glm::vec3{Beryll::RandomGenerator::getFloat() * 8.0f - 4.0f,
                                                                             Beryll::RandomGenerator::getFloat() * 3.0f + 1.0f,
-                                                                            Beryll::RandomGenerator::getFloat() * 8.0f - 4.0f}, 100.0f);
+                                                                            Beryll::RandomGenerator::getFloat() * 8.0f - 4.0f}, 50.0f);
                             break;
                         }
                     }

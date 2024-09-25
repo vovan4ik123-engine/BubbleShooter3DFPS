@@ -23,6 +23,7 @@ namespace EnumsAndVars
 
     // Player.
     constexpr inline float playerMass = 1.0f;
+    constexpr inline glm::vec3 playerGravity{0.0f, -70.0f, 0.0f};
 
     // Player bullet.
     constexpr inline float bulletMass = 0.001f;
@@ -31,8 +32,6 @@ namespace EnumsAndVars
     constexpr inline float shotDelaySec = 0.04f;
 
     // Enemies.
-    constexpr inline int enemiesMaxActiveCountOnGroundDefault = 0;
-    inline int enemiesMaxActiveCountOnGround = enemiesMaxActiveCountOnGroundDefault;
     constexpr inline int enemiesCurrentPathfindingIndexDefault = 0;
     inline int enemiesCurrentPathfindingIndex = enemiesCurrentPathfindingIndexDefault;
     constexpr inline int enemiesMaxPathfindingInOneFrame = 10;
@@ -52,7 +51,6 @@ namespace EnumsAndVars
         playTimeSec = 0.0f;
 
         // Enemies.
-        enemiesMaxActiveCountOnGround = enemiesMaxActiveCountOnGroundDefault;
         enemiesCurrentPathfindingIndex = enemiesCurrentPathfindingIndexDefault;
     }
 }

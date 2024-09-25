@@ -77,8 +77,6 @@ namespace BubbleShooter3D
         float damageRadius = 0.0f; // Use if unit AttackType::RANGE_DAMAGE_RADIUS.
         float timeBetweenAttacks = 0.0f; // Sec.
 
-        int garbageAmountToDie = 0; // Amount of garbage inside player magnetic radius to kill this unit by collision.
-        float reducePlayerSpeedWhenDie = 0.0f;
         int experienceWhenDie = 0;
 
     protected:
