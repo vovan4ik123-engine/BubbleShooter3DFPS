@@ -10,7 +10,8 @@ namespace BubbleShooter3D
                          Beryll::CollisionFlags collFlag,
                          Beryll::CollisionGroups collGroup,
                          Beryll::CollisionGroups collMask,
-                         Beryll::SceneObjectGroups sceneGroup)
+                         Beryll::SceneObjectGroups sceneGroup,
+                         float HP)
     {
         m_obj = std::make_shared<Beryll::AnimatedCollidingCharacter>(filePath,
                                                                      collisionMassKg,
@@ -21,6 +22,8 @@ namespace BubbleShooter3D
                                                                      sceneGroup);
 
         m_objID = m_obj->getID();
+        m_maxHP = HP;
+        m_currentHP = HP;
 
         disableEnemy();
     }
@@ -36,6 +39,8 @@ namespace BubbleShooter3D
         m_obj->enableDraw();
         m_obj->enableUpdate();
         m_obj->enableCollisionMesh();
+
+        m_currentHP = m_maxHP;
 
         ++BaseEnemy::m_activeEnemiesCount;
         m_isEnabled = true;

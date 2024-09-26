@@ -8,14 +8,16 @@ namespace BubbleShooter3D
                                Beryll::CollisionFlags collFlag,
                                Beryll::CollisionGroups collGroup,
                                Beryll::CollisionGroups collMask,
-                               Beryll::SceneObjectGroups sceneGroup)
+                               Beryll::SceneObjectGroups sceneGroup,
+                               float HP)
                                  : BaseEnemy(filePath,
                                              collisionMassKg,
                                              wantCollisionCallBack,
                                              collFlag,
                                              collGroup,
                                              collMask,
-                                             sceneGroup)
+                                             sceneGroup,
+                                             HP)
     {
         unitState = UnitState::MOVE;
     }
@@ -29,6 +31,12 @@ namespace BubbleShooter3D
     {
         if(!m_isEnabled)
             return;
+
+        if(m_currentHP <= 0.0f)
+        {
+            disableEnemy();
+            return;
+        }
 
         if(getIsAttacking())
         {

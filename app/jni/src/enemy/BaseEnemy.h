@@ -36,7 +36,8 @@ namespace BubbleShooter3D
                   Beryll::CollisionFlags collFlag,
                   Beryll::CollisionGroups collGroup,
                   Beryll::CollisionGroups collMask,
-                  Beryll::SceneObjectGroups sceneGroup);
+                  Beryll::SceneObjectGroups sceneGroup,
+                  float HP);
         virtual ~BaseEnemy();
         
         virtual void update(const glm::vec3& playerOrigin) = 0;
@@ -56,6 +57,7 @@ namespace BubbleShooter3D
         bool getIsTimeToAttack() { return (m_lastAttackTime + timeBetweenAttacks) < EnumsAndVars::playTimeSec; }
         bool getIsAttacking() { return (m_lastAttackTime + timeBetweenAttacks) > EnumsAndVars::playTimeSec; }
         bool getIsDelayBeforeFirstAttack() { return (m_prepareToFirstAttackStartTime + timeBetweenAttacks) > EnumsAndVars::playTimeSec; }
+        void takeDamage(const float damage) { m_currentHP -= damage; }
 
         bool castRayToFindYPos = false;
         glm::ivec2 getCurrentPointToMove2DInt() { return m_currentPointToMove2DIntegers; };
@@ -93,6 +95,10 @@ namespace BubbleShooter3D
         float m_lastAttackTime = -9999.0f; // Sec.
         float m_prepareToFirstAttackStartTime = -9999.0f;
         bool m_prepareToFirstAttack = true; // When was outside attack radius and enter inside attack radius.
+
+        // HP.
+        float m_maxHP = 0.0f;
+        float m_currentHP = 0.0f;
 
         // Pathfinding.
         std::vector<glm::ivec2> m_pathArray; // On XZ plane. INTEGER values.

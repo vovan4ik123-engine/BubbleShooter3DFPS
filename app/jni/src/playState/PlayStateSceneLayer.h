@@ -35,6 +35,8 @@ namespace BubbleShooter3D
 
         std::shared_ptr<PlayStateGUILayer> m_gui;
 
+        int m_enemiesFirstID = 0;
+
         std::shared_ptr<Player> m_player;
         std::vector<PlayerBullet> m_playerBullets;
         std::vector<MovableEnemy> m_movableEnemies;

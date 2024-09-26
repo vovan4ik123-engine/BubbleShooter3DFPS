@@ -14,7 +14,8 @@ namespace BubbleShooter3D
                      Beryll::CollisionFlags collFlag,
                      Beryll::CollisionGroups collGroup,
                      Beryll::CollisionGroups collMask,
-                     Beryll::SceneObjectGroups sceneGroup);
+                     Beryll::SceneObjectGroups sceneGroup,
+                     float HP);
         ~MovableEnemy() override;
 
         void update(const glm::vec3& playerOrigin) override;

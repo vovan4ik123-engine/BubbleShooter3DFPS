@@ -289,6 +289,8 @@ namespace BubbleShooter3D
 
     void PlayStateSceneLayer::loadEnemies()
     {
+        m_enemiesFirstID = BeryllUtils::Common::getLastGeneratedID() + 1;
+
         for(int i = 0; i < 500; ++i)
         {
             MovableEnemy skeleton("models3D/enemies/Skeleton.fbx",
@@ -297,7 +299,8 @@ namespace BubbleShooter3D
                                   Beryll::CollisionFlags::STATIC,
                                   Beryll::CollisionGroups::MOVABLE_ENEMY,
                                   Beryll::CollisionGroups::PLAYER_BULLET,
-                                  Beryll::SceneObjectGroups::ENEMY);
+                                  Beryll::SceneObjectGroups::ENEMY,
+                                  1.0f);
 
             skeleton.getObj()->setCurrentAnimationByIndex(EnumsAndVars::AnimationIndexes::run, false, false, true);
             skeleton.getObj()->setDefaultAnimationByIndex(EnumsAndVars::AnimationIndexes::stand);
@@ -310,7 +313,7 @@ namespace BubbleShooter3D
             skeleton.dieSound = SoundType::NONE;
             skeleton.castRayToFindYPos = true;
 
-            skeleton.damage = 1.5f;
+            skeleton.damage = 1.0f;
             skeleton.attackDistance = 30.0f;
             skeleton.timeBetweenAttacks = 2.0f + Beryll::RandomGenerator::getFloat() * 0.5f;
 
@@ -678,29 +681,23 @@ namespace BubbleShooter3D
             if(bullet.getIsEnabled())
             {
                 int collisionID = Beryll::Physics::getAnyCollisionForID(bullet.getObjID());
-                if(collisionID > 0)
+                if(collisionID >= m_enemiesFirstID && (collisionID - m_enemiesFirstID) < m_movableEnemies.size())
                 {
-                    for(auto& enemy : m_movableEnemies)
+                    m_movableEnemies[collisionID - m_enemiesFirstID].takeDamage(1.0f);
+
+                    Sounds::playSoundEffect(SoundType::BULLET_HIT);
+                    // Damage on screen.
+                    int number = Beryll::RandomGenerator::getInt(1000) + 1;
+                    float numberHeight = std::max(2.5f, glm::distance(Beryll::Camera::getCameraPos(), bullet.getObj()->getOrigin()) * 0.03f);
+                    if(Beryll::RandomGenerator::getFloat() < 0.1f)
                     {
-                        if(enemy.getIsEnabled() && enemy.getObjID() == collisionID)
-                        {
-                            enemy.disableEnemy();
-                            Sounds::playSoundEffect(SoundType::BULLET_HIT);
-                            // Damage on screen.
-                            int number = Beryll::RandomGenerator::getInt(1000) + 1;
-                            float numberHeight = std::max(2.5f, glm::distance(Beryll::Camera::getCameraPos(), bullet.getObj()->getOrigin()) * 0.03f);
-                            if(Beryll::RandomGenerator::getFloat() < 0.1f)
-                            {
-                                number *= 10;
-                                numberHeight *= 3.0f;
-                            }
-                            Beryll::TextOnScene::addNumbersToShow(number, numberHeight, 0.5f, bullet.getObj()->getOrigin(),
-                                                                  glm::vec3{Beryll::RandomGenerator::getFloat() * 8.0f - 4.0f,
-                                                                            Beryll::RandomGenerator::getFloat() * 3.0f + 1.0f,
-                                                                            Beryll::RandomGenerator::getFloat() * 8.0f - 4.0f}, 50.0f);
-                            break;
-                        }
+                        number *= 10;
+                        numberHeight *= 3.0f;
                     }
+                    Beryll::TextOnScene::addNumbersToShow(number, numberHeight, 0.5f, bullet.getObj()->getOrigin(),
+                                                          glm::vec3{Beryll::RandomGenerator::getFloat() * 8.0f - 4.0f,
+                                                                    Beryll::RandomGenerator::getFloat() * 3.0f + 1.0f,
+                                                                    Beryll::RandomGenerator::getFloat() * 8.0f - 4.0f}, 50.0f);
                 }
             }
         }
