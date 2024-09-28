@@ -57,7 +57,7 @@ namespace BubbleShooter3D
         bool getIsTimeToAttack() { return (m_lastAttackTime + timeBetweenAttacks) < EnumsAndVars::playTimeSec; }
         bool getIsAttacking() { return (m_lastAttackTime + timeBetweenAttacks) > EnumsAndVars::playTimeSec; }
         bool getIsDelayBeforeFirstAttack() { return (m_prepareToFirstAttackStartTime + timeBetweenAttacks) > EnumsAndVars::playTimeSec; }
-        void takeDamage(const float damage) { m_currentHP -= damage; }
+        void takeDamage(const float damag) { m_currentHP -= damag; }
 
         bool castRayToFindYPos = false;
         glm::ivec2 getCurrentPointToMove2DInt() { return m_currentPointToMove2DIntegers; };

@@ -404,19 +404,29 @@ namespace BubbleShooter3D
 
             if(f.downEvent)
             {
-                m_lastFingerMovePosX = f.SDL2ScreenPos.x;
-                m_lastFingerMovePosY = f.SDL2ScreenPos.y;
+                m_lastFingerMovePosX = f.normalizedPos.x;
+                m_lastFingerMovePosY = f.normalizedPos.y;
                 break;
             }
             else
             {
-                float deltaX = f.SDL2ScreenPos.x - m_lastFingerMovePosX;
-                float deltaY = f.SDL2ScreenPos.y - m_lastFingerMovePosY;
-                m_lastFingerMovePosX = f.SDL2ScreenPos.x;
-                m_lastFingerMovePosY = f.SDL2ScreenPos.y;
+                float deltaX = (f.normalizedPos.x - m_lastFingerMovePosX) * EnumsAndVars::Settings::cameraHorizontalSpeed;
+                const float deltaXInOneSecAbs = std::fabs(deltaX * (1.0f / Beryll::TimeStep::getTimeStepSec()));
 
-                m_eyesLookAngleXZ += deltaX * EnumsAndVars::Settings::cameraHorizontalSpeed;
-                m_eyesLookAngleY -= deltaY * EnumsAndVars::Settings::cameraVerticalSpeed;
+                if(deltaXInOneSecAbs > EnumsAndVars::Settings::cameraSpeedThresholdToAccelerate)
+                {
+                    const float accelFactor = std::powf((deltaXInOneSecAbs - EnumsAndVars::Settings::cameraSpeedThresholdToAccelerate), 1.1f) * 0.001f;
+                    BR_INFO("std::fabs(deltaXInOneSec) %f accelFactor %f", deltaXInOneSecAbs, accelFactor);
+                    deltaX = deltaX + deltaX * accelFactor;
+                }
+
+                float deltaY = (f.normalizedPos.y - m_lastFingerMovePosY) * EnumsAndVars::Settings::cameraVerticalSpeed;
+
+                m_lastFingerMovePosX = f.normalizedPos.x;
+                m_lastFingerMovePosY = f.normalizedPos.y;
+
+                m_eyesLookAngleXZ += deltaX;
+                m_eyesLookAngleY -= deltaY;
                 if(m_eyesLookAngleY > 35.0f) m_eyesLookAngleY = 35.0f; // Eye up.
                 if(m_eyesLookAngleY < -75.0f) m_eyesLookAngleY = -75.0f; // Eye down.
                 //BR_INFO("m_eyesLookAngleY %f", m_eyesLookAngleY);
@@ -695,9 +705,9 @@ namespace BubbleShooter3D
                         numberHeight *= 3.0f;
                     }
                     Beryll::TextOnScene::addNumbersToShow(number, numberHeight, 0.5f, bullet.getObj()->getOrigin(),
-                                                          glm::vec3{Beryll::RandomGenerator::getFloat() * 8.0f - 4.0f,
-                                                                    Beryll::RandomGenerator::getFloat() * 3.0f + 1.0f,
-                                                                    Beryll::RandomGenerator::getFloat() * 8.0f - 4.0f}, 50.0f);
+                                                          glm::vec3{Beryll::RandomGenerator::getFloat() * 10.0f - 5.0f,
+                                                                    Beryll::RandomGenerator::getFloat() * 3.0f + 2.0f,
+                                                                    Beryll::RandomGenerator::getFloat() * 10.0f - 5.0f}, 50.0f);
                 }
             }
         }
