@@ -68,8 +68,6 @@ namespace BubbleShooter3D
         handleControls();
         checkMapBorders();
         updatePathfindingAndSpawnEnemies();
-        for(auto& enemy : m_movableEnemies)
-            enemy.update(m_player->getOrigin());
     }
 
     void PlayStateSceneLayer::updateAfterPhysics()
@@ -101,7 +99,8 @@ namespace BubbleShooter3D
             }
         }
 
-        killEnemies();
+        handlePlayerAttacks();
+        updateEnemiesAndTheirsAttacks();
         handleCamera();
     }
 
@@ -293,7 +292,7 @@ namespace BubbleShooter3D
 
         for(int i = 0; i < 500; ++i)
         {
-            MovableEnemy skeleton("models3D/enemies/Skeleton.fbx",
+            MovableEnemy skeleton("models3D/enemies/SkeletonSword.fbx",
                                   0.0f,
                                   false,
                                   Beryll::CollisionFlags::STATIC,
@@ -315,7 +314,7 @@ namespace BubbleShooter3D
 
             skeleton.damage = 1.0f;
             skeleton.attackDistance = 30.0f;
-            skeleton.timeBetweenAttacks = 2.0f + Beryll::RandomGenerator::getFloat() * 0.5f;
+            skeleton.timeBetweenAttacks = 1.5f + Beryll::RandomGenerator::getFloat() * 0.5f;
 
             skeleton.experienceWhenDie = 25;
             skeleton.getObj()->getController().moveSpeed = 25.0f;
@@ -416,7 +415,6 @@ namespace BubbleShooter3D
                 if(deltaXInOneSecAbs > EnumsAndVars::Settings::cameraSpeedThresholdToAccelerate)
                 {
                     const float accelFactor = std::powf((deltaXInOneSecAbs - EnumsAndVars::Settings::cameraSpeedThresholdToAccelerate), 1.1f) * 0.001f;
-                    BR_INFO("std::fabs(deltaXInOneSec) %f accelFactor %f", deltaXInOneSecAbs, accelFactor);
                     deltaX = deltaX + deltaX * accelFactor;
                 }
 
@@ -684,7 +682,7 @@ namespace BubbleShooter3D
         //BR_INFO("BaseEnemy::getActiveCount(): %d", BaseEnemy::getActiveCount());
     }
 
-    void PlayStateSceneLayer::killEnemies()
+    void PlayStateSceneLayer::handlePlayerAttacks()
     {
         for(auto& bullet : m_playerBullets)
         {
@@ -710,6 +708,20 @@ namespace BubbleShooter3D
                                                                     Beryll::RandomGenerator::getFloat() * 10.0f - 5.0f}, 50.0f);
                 }
             }
+        }
+    }
+
+    void PlayStateSceneLayer::updateEnemiesAndTheirsAttacks()
+    {
+        for(auto& enemy : m_movableEnemies)
+        {
+            if(!enemy.getIsEnabled())
+                continue;
+
+            enemy.update(m_player->getOrigin());
+
+            if(enemy.unitState == UnitState::CAN_ATTACK)
+                enemy.attack(m_player->getOrigin());
         }
     }
 }

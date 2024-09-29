@@ -8,7 +8,7 @@ namespace BubbleShooter3D
 {
     enum class UnitState
     {
-        MOVE, IN_ATTACK_RADIUS, STAND_AIMING, ATTACKING, CAN_ATTACK
+        MOVE, IN_ATTACK_RADIUS, STAND_AIMING, ATTACKING, CAN_ATTACK, DYING
     };
 
     enum class UnitType

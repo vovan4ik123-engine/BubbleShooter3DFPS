@@ -44,6 +44,7 @@ namespace BubbleShooter3D
 
         ++BaseEnemy::m_activeEnemiesCount;
         m_isEnabled = true;
+        unitState = UnitState::MOVE;
     }
 
     void BaseEnemy::disableEnemy()

@@ -31,7 +31,8 @@ namespace BubbleShooter3D
         void checkMapBorders();
         void updatePathfindingAndSpawnEnemies();
         void spawnEnemies();
-        void killEnemies();
+        void handlePlayerAttacks();
+        void updateEnemiesAndTheirsAttacks();
 
         std::shared_ptr<PlayStateGUILayer> m_gui;
 

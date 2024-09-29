@@ -29,12 +29,18 @@ namespace BubbleShooter3D
 
     void MovableEnemy::update(const glm::vec3& playerOrigin)
     {
-        if(!m_isEnabled)
-            return;
-
-        if(m_currentHP <= 0.0f)
+        if(unitState == UnitState::DYING)
         {
-            disableEnemy();
+            if(m_obj->getIsOneTimeAnimationFinished())
+                disableEnemy();
+
+            return;
+        }
+        else if(m_currentHP <= 0.0f)
+        {
+            m_obj->setCurrentAnimationByIndex(3 + Beryll::RandomGenerator::getInt(1), true, false, false);
+            unitState = UnitState::DYING;
+            m_obj->disableCollisionMesh();
             return;
         }
 

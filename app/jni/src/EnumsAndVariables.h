@@ -13,6 +13,8 @@ namespace EnumsAndVars
         static constexpr inline int run = 0;    // 1_Run    - names in blender.
         static constexpr inline int stand = 1;  // 2_Stand
         static constexpr inline int attack = 2; // 3_Attack
+        static constexpr inline int die1 = 3; // 4_Die1
+        static constexpr inline int die2 = 4; // 5_Die2
     };
 
     struct Settings
