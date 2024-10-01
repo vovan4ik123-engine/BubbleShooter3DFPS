@@ -33,6 +33,8 @@ namespace BubbleShooter3D
                                                             0.0f, 0.25f, 0.40f, 0.40f * screenAR);
         m_guiObjects.push_back(playerJoystick);
         playerJoystick->disable();
+
+        m_countersFont = Beryll::MainImGUI::getInstance()->createFont(EnumsAndVars::FontsPath::roboto, 0.05f);
     }
 
     PlayStateGUILayer::~PlayStateGUILayer()
@@ -86,5 +88,30 @@ namespace BubbleShooter3D
         const float GUIWidth = Beryll::MainImGUI::getInstance()->getGUIWidth();
         const float GUIHeight = Beryll::MainImGUI::getInstance()->getGUIHeight();
 
+        // HP.
+        ImGui::SetNextWindowPos(ImVec2(0.9f * GUIWidth, 0.0f * GUIHeight));
+        ImGui::SetNextWindowSize(ImVec2(0.0f * GUIWidth, 0.0f * GUIHeight));
+        ImGui::Begin("HP", nullptr, m_noBackgroundNoFrame);
+        ImGui::SetCursorPos(ImVec2(0.0f, 0.0f));
+        ImGui::PushStyleColor(ImGuiCol_Text, ImVec4{0.0f, 0.0f, 0.0f, 0.0f});
+        ImGui::PushStyleColor(ImGuiCol_PlotHistogram, ImVec4{0.6289f, 1.0f, 0.3086f, 1.0f});
+        ImGui::PushStyleColor(ImGuiCol_FrameBg, ImVec4{0.8516f, 0.0859f, 0.1641f, 1.0f});
+        ImGui::ProgressBar(0.7f, ImVec2(0.1f * GUIWidth, 0.04f * GUIHeight));
+        ImGui::PopStyleColor(3);
+        ImGui::End();
+
+        // Killed + damage counters.
+        ImGui::SetNextWindowPos(ImVec2(0.9f * GUIWidth, 0.04f * GUIHeight));
+        ImGui::SetNextWindowSize(ImVec2(0.0f, 0.0f));
+        ImGui::Begin("killedAndDamageTexts", nullptr, m_noBackgroundNoFrame);
+        ImGui::PushStyleColor(ImGuiCol_Text, ImVec4{0.0625f, 0.0586f, 0.0898f, 1.0f });
+        ImGui::PushFont(m_countersFont);
+        ImGui::SetCursorPos(ImVec2(0.004f * GUIWidth, 0.0f * GUIHeight));
+        ImGui::Text("%d", EnumsAndVars::enemiesKilledCount);
+        ImGui::SetCursorPos(ImVec2(0.004f * GUIWidth, 0.04f * GUIHeight));
+        ImGui::Text("%d", EnumsAndVars::playerTotalDamage);
+        ImGui::PopFont();
+        ImGui::PopStyleColor(1);
+        ImGui::End();
     }
 }

@@ -290,7 +290,7 @@ namespace BubbleShooter3D
     {
         m_enemiesFirstID = BeryllUtils::Common::getLastGeneratedID() + 1;
 
-        for(int i = 0; i < 500; ++i)
+        for(int i = 0; i < 600; ++i)
         {
             MovableEnemy skeleton("models3D/enemies/SkeletonSword.fbx",
                                   0.0f,
@@ -371,21 +371,22 @@ namespace BubbleShooter3D
         else
         {
             m_gui->playerJoystick->disable();
-        }
 
-        std::vector<Beryll::Finger>& fingers = Beryll::EventHandler::getFingers();
-        for(Beryll::Finger& f : fingers)
-        {
-            if(f.handled)
-                continue;
-
-            if(f.normalizedPos.x < 0.4f && f.normalizedPos.y > 0.4f)
+            std::vector<Beryll::Finger>& fingers = Beryll::EventHandler::getFingers();
+            for(Beryll::Finger& f : fingers)
             {
-                if(f.downEvent)
+                if(f.handled)
+                    continue;
+
+                if(f.normalizedPos.x < 0.4f && f.normalizedPos.y > 0.4f)
                 {
-                    m_gui->playerJoystick->enable();
-                    m_gui->playerJoystick->setOrigin(f.normalizedPos);
-                    f.handled = true;
+                    if(f.downEvent)
+                    {
+                        m_gui->playerJoystick->enable();
+                        m_gui->playerJoystick->setOrigin(f.normalizedPos);
+                        f.handled = true;
+                        break;
+                    }
                 }
             }
         }
@@ -640,7 +641,7 @@ namespace BubbleShooter3D
             {
                 enemy.isCanBeSpawned = false;
 
-                if(skeletonCount < 500 && enemy.unitType == UnitType::ENEMY_1)
+                if(skeletonCount < 600 && enemy.unitType == UnitType::ENEMY_1)
                 {
                     enemy.isCanBeSpawned = true;
                     ++skeletonCount;
@@ -705,7 +706,10 @@ namespace BubbleShooter3D
                     Beryll::TextOnScene::addNumbersToShow(number, numberHeight, 0.5f, bullet.getObj()->getOrigin(),
                                                           glm::vec3{Beryll::RandomGenerator::getFloat() * 10.0f - 5.0f,
                                                                     Beryll::RandomGenerator::getFloat() * 3.0f + 2.0f,
-                                                                    Beryll::RandomGenerator::getFloat() * 10.0f - 5.0f}, 50.0f);
+                                                                    Beryll::RandomGenerator::getFloat() * 10.0f - 5.0f},
+                                                          50.0f);
+
+                    EnumsAndVars::playerTotalDamage += number;
                 }
             }
         }

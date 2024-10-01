@@ -27,5 +27,17 @@ namespace BubbleShooter3D
         std::shared_ptr<Beryll::Text> m_statistics1;
         std::shared_ptr<Beryll::Text> m_statistics2;
         uint64_t m_statisticsUpdateTime = 0;
+
+        // GUI based on raw ImGUI.
+        // ImGUI flags.
+        int m_noBackgroundNoFrame = ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize |
+                                    ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoBackground |
+                                    ImGuiWindowFlags_NoScrollbar;
+
+        int m_noFrame = ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize |
+                        ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoScrollbar;
+
+        // Counters.
+        ImFont* m_countersFont;
     };
 }

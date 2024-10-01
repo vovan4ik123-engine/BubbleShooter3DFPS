@@ -38,6 +38,7 @@ namespace BubbleShooter3D
         }
         else if(m_currentHP <= 0.0f)
         {
+            ++EnumsAndVars::enemiesKilledCount;
             m_obj->setCurrentAnimationByIndex(3 + Beryll::RandomGenerator::getInt(1), true, false, false);
             unitState = UnitState::DYING;
             m_obj->disableCollisionMesh();
@@ -53,7 +54,7 @@ namespace BubbleShooter3D
         {
             //BR_INFO("%s", "MovableEnemy DelayBeforeFirstAttack");
             unitState = UnitState::STAND_AIMING;
-            m_obj->setCurrentAnimationByIndex(EnumsAndVars::AnimationIndexes::stand, false, false, true);
+            m_obj->setCurrentAnimationByIndex(EnumsAndVars::AnimationIndexes::stand, false, false);
             m_obj->rotateToPoint(playerOrigin, true);
         }
         else if(glm::distance(m_obj->getOrigin(), playerOrigin) > attackDistance)

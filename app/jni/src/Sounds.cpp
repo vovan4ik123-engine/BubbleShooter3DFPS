@@ -10,7 +10,7 @@ namespace BubbleShooter3D
     std::string Sounds::m_bulletHit1 = "sounds/BulletHit1.wav";
     std::string Sounds::m_bulletHit2 = "sounds/BulletHit2.wav";
     float Sounds::m_bulletHitTime = 0.0f;
-    float Sounds::m_bulletHitDelay = 0.1f;
+    float Sounds::m_bulletHitDelay = 0.12f;
     std::string Sounds::m_jumppad = "sounds/Jumppad.wav";
 
     void Sounds::reset()

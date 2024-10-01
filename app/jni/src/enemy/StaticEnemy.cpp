@@ -46,7 +46,7 @@ namespace BubbleShooter3D
         {
             //BR_INFO("%s", "StaticEnemy DelayBeforeFirstAttack");
             unitState = UnitState::STAND_AIMING;
-            m_obj->setCurrentAnimationByIndex(EnumsAndVars::AnimationIndexes::stand, false, false, true);
+            m_obj->setCurrentAnimationByIndex(EnumsAndVars::AnimationIndexes::stand, false, false);
             m_obj->rotateToPoint(playerOrigin, true);
         }
         else if(glm::distance(m_obj->getOrigin(), playerOrigin) < attackDistance)
@@ -87,7 +87,7 @@ namespace BubbleShooter3D
         else
         {
             unitState = UnitState::STAND_AIMING;
-            m_obj->setCurrentAnimationByIndex(EnumsAndVars::AnimationIndexes::stand, false, false, true);
+            m_obj->setCurrentAnimationByIndex(EnumsAndVars::AnimationIndexes::stand, false, false);
             m_prepareToFirstAttack = true;
         }
     }
