@@ -14,16 +14,8 @@ namespace BubbleShooter3D
     enum class UnitType
     {
         NONE,
-        ENEMY_1
-    };
-
-    enum class AttackType
-    {
-        NONE,
-        MELEE_DAMAGE_ONE,
-        RANGE_DAMAGE_ONE,
-        RANGE_DAMAGE_RADIUS,
-        MAGNETIZE_GARBAGE
+        ENEMY_1,
+        ENEMY_2
     };
 
     class BaseEnemy
@@ -41,7 +33,6 @@ namespace BubbleShooter3D
         virtual ~BaseEnemy();
         
         virtual void update(const glm::vec3& playerOrigin) = 0;
-        virtual void die() = 0;
         void attack(const glm::vec3& playerOrigin);
         virtual void freeStaticPosition() = 0; // Implement for StaticEnemy.
         virtual void setPathArray(std::vector<glm::ivec2> pathArray, const int indexToMove) = 0; // Implement for MovableEnemy.
@@ -65,11 +56,8 @@ namespace BubbleShooter3D
 
         UnitState unitState = UnitState::MOVE;
         UnitType unitType = UnitType::NONE;
-        AttackType attackType = AttackType::NONE;
         SoundType attackSound = SoundType::NONE;
         SoundType attackHitSound = SoundType::NONE;
-        glm::vec3 attackParticlesColor{0.5f};
-        float attackParticlesSize = 0.2f;
         SoundType dieSound = SoundType::NONE;
 
         bool isCanBeSpawned = false;

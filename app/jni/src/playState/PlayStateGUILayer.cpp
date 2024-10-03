@@ -34,7 +34,8 @@ namespace BubbleShooter3D
         m_guiObjects.push_back(playerJoystick);
         playerJoystick->disable();
 
-        m_countersFont = Beryll::MainImGUI::getInstance()->createFont(EnumsAndVars::FontsPath::roboto, 0.05f);
+        m_countersFont = Beryll::MainImGUI::getInstance()->createFont(EnumsAndVars::FontsPath::roboto, 0.04f);
+        m_counterStr.reserve(20);
     }
 
     PlayStateGUILayer::~PlayStateGUILayer()
@@ -101,15 +102,36 @@ namespace BubbleShooter3D
         ImGui::End();
 
         // Killed + damage counters.
-        ImGui::SetNextWindowPos(ImVec2(0.9f * GUIWidth, 0.04f * GUIHeight));
+        ImGui::SetNextWindowPos(ImVec2(0.9f * GUIWidth, 0.045f * GUIHeight));
         ImGui::SetNextWindowSize(ImVec2(0.0f, 0.0f));
         ImGui::Begin("killedAndDamageTexts", nullptr, m_noBackgroundNoFrame);
         ImGui::PushStyleColor(ImGuiCol_Text, ImVec4{0.0625f, 0.0586f, 0.0898f, 1.0f });
         ImGui::PushFont(m_countersFont);
         ImGui::SetCursorPos(ImVec2(0.004f * GUIWidth, 0.0f * GUIHeight));
-        ImGui::Text("%d", EnumsAndVars::enemiesKilledCount);
+        int threeCharsCounter = 1;
+        m_counterStr = std::to_string(EnumsAndVars::enemiesKilledCount);
+        for(int i = m_counterStr.size() - 1; i > 0; --i, ++threeCharsCounter)
+        {
+            if(threeCharsCounter == 3)
+            {
+                m_counterStr.insert(i, 1, ',');
+                threeCharsCounter = 0;
+            }
+        }
+        ImGui::Text("%s", m_counterStr.c_str());
+
         ImGui::SetCursorPos(ImVec2(0.004f * GUIWidth, 0.04f * GUIHeight));
-        ImGui::Text("%d", EnumsAndVars::playerTotalDamage);
+        m_counterStr = std::to_string(EnumsAndVars::playerTotalDamage);
+        threeCharsCounter = 1;
+        for(int i = m_counterStr.size() - 1; i > 0; --i, ++threeCharsCounter)
+        {
+            if(threeCharsCounter == 3)
+            {
+                m_counterStr.insert(i, 1, ',');
+                threeCharsCounter = 0;
+            }
+        }
+        ImGui::Text("%s", m_counterStr.c_str());
         ImGui::PopFont();
         ImGui::PopStyleColor(1);
         ImGui::End();

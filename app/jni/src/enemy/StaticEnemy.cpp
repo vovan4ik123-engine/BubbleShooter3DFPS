@@ -97,13 +97,6 @@ namespace BubbleShooter3D
         // Does not need for StaticEnemy.
     }
 
-    void StaticEnemy::die()
-    {
-        Sounds::playSoundEffect(dieSound);
-        disableEnemy();
-        freeStaticPosition();
-    }
-
     void StaticEnemy::freeStaticPosition()
     {
         auto iter = std::find_if(StaticEnemy::staticPositions.begin(), StaticEnemy::staticPositions.end(),

@@ -19,7 +19,6 @@ namespace BubbleShooter3D
         ~MovableEnemy() override;
 
         void update(const glm::vec3& playerOrigin) override;
-        void die() override;
         void freeStaticPosition() override
         {
             BR_ASSERT(false, "%s", "Dont call freeStaticPosition() for MovableEnemy. It has not StaticPosition.")
@@ -28,5 +27,6 @@ namespace BubbleShooter3D
 
     protected:
         void move() override;
+        float m_timeDie = 0.0f;
     };
 }

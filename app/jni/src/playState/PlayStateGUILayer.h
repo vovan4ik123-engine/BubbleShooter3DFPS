@@ -39,5 +39,6 @@ namespace BubbleShooter3D
 
         // Counters.
         ImFont* m_countersFont;
+        std::string m_counterStr;
     };
 }

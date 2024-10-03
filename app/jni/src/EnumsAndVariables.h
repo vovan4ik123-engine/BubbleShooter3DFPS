@@ -15,6 +15,7 @@ namespace EnumsAndVars
         static constexpr inline int attack = 2; // 3_Attack
         static constexpr inline int die1 = 3; // 4_Die1
         static constexpr inline int die2 = 4; // 5_Die2
+        static constexpr inline int die3 = 5; // 6_Die3
     };
 
     struct Settings

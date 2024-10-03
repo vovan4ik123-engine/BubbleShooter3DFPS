@@ -290,9 +290,9 @@ namespace BubbleShooter3D
     {
         m_enemiesFirstID = BeryllUtils::Common::getLastGeneratedID() + 1;
 
-        for(int i = 0; i < 600; ++i)
+        for(int i = 0; i < 500; ++i)
         {
-            MovableEnemy skeleton("models3D/enemies/SkeletonSword.fbx",
+            MovableEnemy skeleton("models3D/enemies/SkeletonSword.fbx", // SkeletonSword GhoulBones
                                   0.0f,
                                   false,
                                   Beryll::CollisionFlags::STATIC,
@@ -304,11 +304,8 @@ namespace BubbleShooter3D
             skeleton.getObj()->setCurrentAnimationByIndex(EnumsAndVars::AnimationIndexes::run, false, false, true);
             skeleton.getObj()->setDefaultAnimationByIndex(EnumsAndVars::AnimationIndexes::stand);
             skeleton.unitType = UnitType::ENEMY_1;
-            skeleton.attackType = AttackType::RANGE_DAMAGE_ONE;
             skeleton.attackSound = SoundType::NONE;
             skeleton.attackHitSound = SoundType::NONE;
-            skeleton.attackParticlesColor = glm::vec3{0.4258f, 0.84f, 0.68f};
-            skeleton.attackParticlesSize = 0.3f;
             skeleton.dieSound = SoundType::NONE;
             skeleton.castRayToFindYPos = true;
 
@@ -317,11 +314,42 @@ namespace BubbleShooter3D
             skeleton.timeBetweenAttacks = 1.5f + Beryll::RandomGenerator::getFloat() * 0.5f;
 
             skeleton.experienceWhenDie = 25;
-            skeleton.getObj()->getController().moveSpeed = 25.0f;
+            skeleton.getObj()->getController().moveSpeed = 40.0f;
 
             m_animatedOrDynamicObjects.push_back(skeleton.getObj());
             m_movableEnemies.push_back(skeleton);
             //m_animatedObjForShadowMap.push_back(skeleton.getObj());
+        }
+
+        for(int i = 0; i < 100; ++i)
+        {
+            MovableEnemy ghoul("models3D/enemies/GhoulBones.fbx", // SkeletonSword GhoulBones
+                                  0.0f,
+                                  false,
+                                  Beryll::CollisionFlags::STATIC,
+                                  Beryll::CollisionGroups::MOVABLE_ENEMY,
+                                  Beryll::CollisionGroups::PLAYER_BULLET,
+                                  Beryll::SceneObjectGroups::ENEMY,
+                                  5.0f);
+
+            ghoul.getObj()->setCurrentAnimationByIndex(EnumsAndVars::AnimationIndexes::run, false, false, true);
+            ghoul.getObj()->setDefaultAnimationByIndex(EnumsAndVars::AnimationIndexes::stand);
+            ghoul.unitType = UnitType::ENEMY_2;
+            ghoul.attackSound = SoundType::NONE;
+            ghoul.attackHitSound = SoundType::NONE;
+            ghoul.dieSound = SoundType::NONE;
+            ghoul.castRayToFindYPos = true;
+
+            ghoul.damage = 1.0f;
+            ghoul.attackDistance = 25.0f;
+            ghoul.timeBetweenAttacks = 2.5f + Beryll::RandomGenerator::getFloat() * 0.5f;
+
+            ghoul.experienceWhenDie = 25;
+            ghoul.getObj()->getController().moveSpeed = 30.0f;
+
+            m_animatedOrDynamicObjects.push_back(ghoul.getObj());
+            m_movableEnemies.push_back(ghoul);
+            //m_animatedObjForShadowMap.push_back(ghoul.getObj());
         }
     }
 
@@ -575,7 +603,7 @@ namespace BubbleShooter3D
                 if(enemiesUpdated >= EnumsAndVars::enemiesMaxPathfindingInOneFrame)
                     break;
 
-                if(m_movableEnemies[i].getIsEnabled() && m_movableEnemies[i].getIsCanMove())
+                if(m_movableEnemies[i].getIsEnabled() && m_movableEnemies[i].unitState != UnitState::DYING && m_movableEnemies[i].getIsCanMove())
                 {
                     m_movableEnemies[i].setPathArray(m_pathFinderEnemies.findPath(m_movableEnemies[i].getCurrentPointToMove2DInt(), m_playerClosestAllowedPos, 7), 0);
                     m_pathFinderEnemies.addBlockedPosition(m_movableEnemies[i].getCurrentPointToMove2DInt());
@@ -637,18 +665,24 @@ namespace BubbleShooter3D
             m_prepareWave3 = false;
 
             int skeletonCount = 0;
+            int ghoulCount = 0;
             for(auto& enemy : m_movableEnemies)
             {
                 enemy.isCanBeSpawned = false;
 
-                if(skeletonCount < 600 && enemy.unitType == UnitType::ENEMY_1)
+                if(skeletonCount < 500 && enemy.unitType == UnitType::ENEMY_1)
+                {
+                    enemy.isCanBeSpawned = true;
+                    ++skeletonCount;
+                }
+                else if(ghoulCount < 100 && enemy.unitType == UnitType::ENEMY_2)
                 {
                     enemy.isCanBeSpawned = true;
                     ++skeletonCount;
                 }
             }
 
-            BR_INFO("Prepare wave 3. Max enemies: %d", skeletonCount);
+            BR_INFO("Prepare wave 3. Max enemies: %d", skeletonCount + ghoulCount);
         }
 
         // Spawn enemies.
@@ -703,7 +737,7 @@ namespace BubbleShooter3D
                         number *= 10;
                         numberHeight *= 3.0f;
                     }
-                    Beryll::TextOnScene::addNumbersToShow(number, numberHeight, 0.5f, bullet.getObj()->getOrigin(),
+                    Beryll::TextOnScene::addNumbersToShow(number, numberHeight, 0.5f, bullet.getObj()->getOrigin() + glm::vec3(0.0f, 10.0f, 0.0f),
                                                           glm::vec3{Beryll::RandomGenerator::getFloat() * 10.0f - 5.0f,
                                                                     Beryll::RandomGenerator::getFloat() * 3.0f + 2.0f,
                                                                     Beryll::RandomGenerator::getFloat() * 10.0f - 5.0f},

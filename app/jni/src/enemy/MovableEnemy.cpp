@@ -32,16 +32,23 @@ namespace BubbleShooter3D
         if(unitState == UnitState::DYING)
         {
             if(m_obj->getIsOneTimeAnimationFinished())
+            {
+                if(m_timeDie + 1.0f > Beryll::TimeStep::getSecFromStart())
+                {
+                    BR_INFO("%s", "m_timeDie + 1.0f > Beryll::TimeStep::getSecFromStart()");
+                }
                 disableEnemy();
+            }
 
             return;
         }
         else if(m_currentHP <= 0.0f)
         {
             ++EnumsAndVars::enemiesKilledCount;
-            m_obj->setCurrentAnimationByIndex(3 + Beryll::RandomGenerator::getInt(1), true, false, false);
+            m_obj->setCurrentAnimationByIndex(3 + Beryll::RandomGenerator::getInt(2), true, false);
             unitState = UnitState::DYING;
             m_obj->disableCollisionMesh();
+            m_timeDie = Beryll::TimeStep::getSecFromStart();
             return;
         }
 
@@ -205,11 +212,5 @@ namespace BubbleShooter3D
                 }
             }
         }
-    }
-
-    void MovableEnemy::die()
-    {
-        Sounds::playSoundEffect(dieSound);
-        disableEnemy();
     }
 }
