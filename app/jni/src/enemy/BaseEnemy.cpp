@@ -11,7 +11,7 @@ namespace BubbleShooter3D
                          Beryll::CollisionGroups collGroup,
                          Beryll::CollisionGroups collMask,
                          Beryll::SceneObjectGroups sceneGroup,
-                         float HP)
+                         const float HP)
     {
         m_obj = std::make_shared<Beryll::AnimatedCollidingCharacter>(filePath,
                                                                      collisionMassKg,

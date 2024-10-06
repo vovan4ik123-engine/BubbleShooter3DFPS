@@ -29,7 +29,7 @@ namespace BubbleShooter3D
                   Beryll::CollisionGroups collGroup,
                   Beryll::CollisionGroups collMask,
                   Beryll::SceneObjectGroups sceneGroup,
-                  float HP);
+                  const float HP);
         virtual ~BaseEnemy();
         
         virtual void update(const glm::vec3& playerOrigin) = 0;

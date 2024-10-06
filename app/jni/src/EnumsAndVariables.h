@@ -27,6 +27,7 @@ namespace EnumsAndVars
 
     // Player.
     constexpr inline float playerMass = 1.0f;
+    constexpr inline float playerStartHP = 100.0f;
     constexpr inline glm::vec3 playerGravity{0.0f, -70.0f, 0.0f};
     inline int playerTotalDamage = 0;
 
@@ -44,7 +45,7 @@ namespace EnumsAndVars
     inline int enemiesCurrentPathfindingIndex = 0;
     inline int enemiesKilledCount = 0;
 
-    // Play time.
+    // Play.
     inline float playTimeSec = 0.0f;
 
     inline void reset()
@@ -59,7 +60,7 @@ namespace EnumsAndVars
         enemiesCurrentPathfindingIndex = 0;
         enemiesKilledCount = 0;
 
-        // Play time.
+        // Play.
         playTimeSec = 0.0f;
     }
 }

@@ -19,6 +19,9 @@ namespace BubbleShooter3D
         std::shared_ptr<Beryll::SliderHorizontal> slider3;
 
         std::shared_ptr<Beryll::Joystick> playerJoystick;
+        float playerHPFraction = 0.0f; // 0.0f...1.0f range.
+
+        bool dieMenuShow = false;
 
     private:
         std::vector<std::shared_ptr<Beryll::GUIObject>> m_guiObjects;
@@ -40,5 +43,8 @@ namespace BubbleShooter3D
         // Counters.
         ImFont* m_countersFont;
         std::string m_counterStr;
+
+        std::unique_ptr<Beryll::Texture> m_restartButtonTexture;
+        bool m_restartButtonClicked = false;
     };
 }

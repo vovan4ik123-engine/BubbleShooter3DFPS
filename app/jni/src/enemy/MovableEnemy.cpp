@@ -32,13 +32,7 @@ namespace BubbleShooter3D
         if(unitState == UnitState::DYING)
         {
             if(m_obj->getIsOneTimeAnimationFinished())
-            {
-                if(m_timeDie + 1.0f > Beryll::TimeStep::getSecFromStart())
-                {
-                    BR_INFO("%s", "m_timeDie + 1.0f > Beryll::TimeStep::getSecFromStart()");
-                }
                 disableEnemy();
-            }
 
             return;
         }

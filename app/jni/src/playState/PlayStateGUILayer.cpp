@@ -1,5 +1,6 @@
 #include "PlayStateGUILayer.h"
 #include "EnumsAndVariables.h"
+#include "GameStateHelper.h"
 
 namespace BubbleShooter3D
 {
@@ -36,6 +37,8 @@ namespace BubbleShooter3D
 
         m_countersFont = Beryll::MainImGUI::getInstance()->createFont(EnumsAndVars::FontsPath::roboto, 0.04f);
         m_counterStr.reserve(20);
+
+        m_restartButtonTexture = Beryll::Renderer::createTexture("GUI/playstate/Restart.jpg", Beryll::TextureType::DIFFUSE_TEXTURE_MAT_1);
     }
 
     PlayStateGUILayer::~PlayStateGUILayer()
@@ -69,6 +72,14 @@ namespace BubbleShooter3D
 
             m_statisticsUpdateTime = Beryll::TimeStep::getMilliSecFromStart();
         }
+
+        if(m_restartButtonClicked)
+        {
+            m_restartButtonClicked = false;
+            dieMenuShow = false;
+            GameStateHelper::popState();
+            GameStateHelper::pushPlayState();
+        }
     }
 
     void PlayStateGUILayer::updateAfterPhysics()
@@ -97,7 +108,7 @@ namespace BubbleShooter3D
         ImGui::PushStyleColor(ImGuiCol_Text, ImVec4{0.0f, 0.0f, 0.0f, 0.0f});
         ImGui::PushStyleColor(ImGuiCol_PlotHistogram, ImVec4{0.6289f, 1.0f, 0.3086f, 1.0f});
         ImGui::PushStyleColor(ImGuiCol_FrameBg, ImVec4{0.8516f, 0.0859f, 0.1641f, 1.0f});
-        ImGui::ProgressBar(0.7f, ImVec2(0.1f * GUIWidth, 0.04f * GUIHeight));
+        ImGui::ProgressBar(playerHPFraction, ImVec2(0.1f * GUIWidth, 0.04f * GUIHeight));
         ImGui::PopStyleColor(3);
         ImGui::End();
 
@@ -135,5 +146,16 @@ namespace BubbleShooter3D
         ImGui::PopFont();
         ImGui::PopStyleColor(1);
         ImGui::End();
+
+        if(dieMenuShow)
+        {
+            ImGui::SetNextWindowPos(ImVec2(0.45f * GUIWidth, 0.45f * GUIHeight));
+            ImGui::SetNextWindowSize(ImVec2(0.0f, 0.0f)); // Set next window size. Set axis to 0.0f to force an auto-fit on this axis.
+            ImGui::Begin("dieMenu", nullptr, m_noBackgroundNoFrame);
+            ImGui::SetCursorPos(ImVec2(0.0f, 0.0f));
+            m_restartButtonClicked = ImGui::ImageButton("restartButton", reinterpret_cast<ImTextureID>(m_restartButtonTexture->getID()),
+                                                       ImVec2(0.1f * GUIWidth, 0.1f * GUIHeight));
+            ImGui::End();
+        }
     }
 }

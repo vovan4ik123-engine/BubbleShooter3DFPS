@@ -61,6 +61,16 @@ namespace BubbleShooter3D
 
     void PlayStateSceneLayer::updateBeforePhysics()
     {
+        if(m_gameOnPause)
+            return;
+
+        if(m_player->getCurrentHP() <= 0.0f)
+        {
+            m_gui->dieMenuShow = true;
+            m_gameOnPause = true;
+            return;
+        }
+
         EnumsAndVars::playTimeSec += Beryll::TimeStep::getTimeStepSec();
         Sounds::update();
 
@@ -72,6 +82,9 @@ namespace BubbleShooter3D
 
     void PlayStateSceneLayer::updateAfterPhysics()
     {
+        if(m_gameOnPause)
+            return;
+
         for(const std::shared_ptr<Beryll::SceneObject>& so : m_animatedOrDynamicObjects)
         {
             if(so->getIsEnabledUpdate())
@@ -101,6 +114,7 @@ namespace BubbleShooter3D
 
         handlePlayerAttacks();
         updateEnemiesAndTheirsAttacks();
+        m_gui->playerHPFraction = std::max(0.0f, m_player->getCurrentHP() / m_player->getMaxHP());
         handleCamera();
     }
 
@@ -207,9 +221,10 @@ namespace BubbleShooter3D
                                             Beryll::CollisionFlags::DYNAMIC,
                                             Beryll::CollisionGroups::PLAYER,
                                             Beryll::CollisionGroups::STATIC_ENVIRONMENT | Beryll::CollisionGroups::JUMPPAD,
-                                            Beryll::SceneObjectGroups::PLAYER);
+                                            Beryll::SceneObjectGroups::PLAYER,
+                                            EnumsAndVars::playerStartHP);
 
-        m_player->setOrigin(glm::vec3(-100.0f, m_player->getFromOriginToBottom(), 0.0f));
+        m_player->setOrigin(glm::vec3(-650.0f, m_player->getFromOriginToBottom(), -530.0f));
         m_player->getController().moveSpeed = 50.0f;
         m_player->setGravity(EnumsAndVars::playerGravity);
         m_player->setAngularFactor(glm::vec3(0.0f));
@@ -330,7 +345,7 @@ namespace BubbleShooter3D
                                   Beryll::CollisionGroups::MOVABLE_ENEMY,
                                   Beryll::CollisionGroups::PLAYER_BULLET,
                                   Beryll::SceneObjectGroups::ENEMY,
-                                  5.0f);
+                                  1.0f);
 
             ghoul.getObj()->setCurrentAnimationByIndex(EnumsAndVars::AnimationIndexes::run, false, false, true);
             ghoul.getObj()->setDefaultAnimationByIndex(EnumsAndVars::AnimationIndexes::stand);
@@ -647,18 +662,24 @@ namespace BubbleShooter3D
             m_prepareWave2 = false;
 
             int skeletonCount = 0;
+            int ghoulCount = 0;
             for(auto& enemy : m_movableEnemies)
             {
                 enemy.isCanBeSpawned = false;
 
-                if(skeletonCount < 400 && enemy.unitType == UnitType::ENEMY_1)
+                if(skeletonCount < 300 && enemy.unitType == UnitType::ENEMY_1)
                 {
                     enemy.isCanBeSpawned = true;
                     ++skeletonCount;
                 }
+                else if(ghoulCount < 100 && enemy.unitType == UnitType::ENEMY_2)
+                {
+                    enemy.isCanBeSpawned = true;
+                    ++ghoulCount;
+                }
             }
 
-            BR_INFO("Prepare wave 2. Max enemies: %d", skeletonCount);
+            BR_INFO("Prepare wave 2. Max enemies: %d", skeletonCount + ghoulCount);
         }
         if(m_prepareWave3 && EnumsAndVars::playTimeSec > m_enemiesWave3Time)
         {
@@ -670,15 +691,15 @@ namespace BubbleShooter3D
             {
                 enemy.isCanBeSpawned = false;
 
-                if(skeletonCount < 500 && enemy.unitType == UnitType::ENEMY_1)
+                if(skeletonCount < 400 && enemy.unitType == UnitType::ENEMY_1)
                 {
                     enemy.isCanBeSpawned = true;
                     ++skeletonCount;
                 }
-                else if(ghoulCount < 100 && enemy.unitType == UnitType::ENEMY_2)
+                else if(ghoulCount < 200 && enemy.unitType == UnitType::ENEMY_2)
                 {
                     enemy.isCanBeSpawned = true;
-                    ++skeletonCount;
+                    ++ghoulCount;
                 }
             }
 
@@ -759,7 +780,10 @@ namespace BubbleShooter3D
             enemy.update(m_player->getOrigin());
 
             if(enemy.unitState == UnitState::CAN_ATTACK)
+            {
+                m_player->takeDamage(1.0f);
                 enemy.attack(m_player->getOrigin());
+            }
         }
     }
 }

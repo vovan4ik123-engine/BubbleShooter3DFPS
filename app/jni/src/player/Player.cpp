@@ -10,7 +10,8 @@ namespace BubbleShooter3D
                    Beryll::CollisionFlags collFlag,
                    Beryll::CollisionGroups collGroup,
                    Beryll::CollisionGroups collMask,
-                   Beryll::SceneObjectGroups sceneGroup)
+                   Beryll::SceneObjectGroups sceneGroup,
+                   const float HP)
                    : Beryll::SimpleCollidingCharacter(filePath,
                                                       collisionMassKg,
                                                       wantCollisionCallBack,
@@ -19,7 +20,8 @@ namespace BubbleShooter3D
                                                       collMask,
                                                       sceneGroup)
     {
-
+        m_maxHP = HP;
+        m_currentHP = HP;
     }
 
     Player::~Player()
