@@ -781,7 +781,7 @@ namespace BubbleShooter3D
 
             if(enemy.unitState == UnitState::CAN_ATTACK)
             {
-                m_player->takeDamage(1.0f);
+                //m_player->takeDamage(1.0f);
                 enemy.attack(m_player->getOrigin());
             }
         }

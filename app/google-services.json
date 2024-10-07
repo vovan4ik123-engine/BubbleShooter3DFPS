@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "72020084796",
+    "project_id": "bubbleshooter3dfps",
+    "storage_bucket": "bubbleshooter3dfps.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:72020084796:android:69314a87b59c0d3f931b39",
+        "android_client_info": {
+          "package_name": "com.bubbleShooter3DFPS.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCxc5Sd0RyrDX3733DvpHyECWjbqetPI_k"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
